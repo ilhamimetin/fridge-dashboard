@@ -1,8 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
+    <meta charset="UTF-8">
     <title>Buzdolabı Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="Buzdolabı sıcaklık takip sistemi">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
@@ -70,6 +80,63 @@
 
         .theme-toggle:active {
             transform: scale(0.95);
+        }
+
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--card-bg);
+            padding: 15px 30px;
+            border-radius: 25px;
+            box-shadow: 0 4px 20px var(--shadow);
+            display: none;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                bottom: -100px;
+                opacity: 0;
+            }
+            to {
+                bottom: 20px;
+                opacity: 1;
+            }
+        }
+
+        .install-prompt.show {
+            display: flex;
+        }
+
+        .install-prompt button {
+            background: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .install-prompt button:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .install-prompt .close-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 5px 10px;
+        }
+
+        .install-prompt .close-btn:hover {
+            background: rgba(0,0,0,0.1);
         }
 
         .status-bar {
@@ -319,6 +386,10 @@
                 height: 45px;
                 font-size: 1.3em;
             }
+            .install-prompt {
+                flex-direction: column;
+                padding: 15px 20px;
+            }
         }
     </style>
 </head>
@@ -327,6 +398,13 @@
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
         🌙
     </button>
+
+    <!-- PWA Install Prompt -->
+    <div class="install-prompt" id="installPrompt">
+        <span style="color: var(--text-primary);">📱 Ana ekrana ekle ve uygulama gibi kullan!</span>
+        <button id="installBtn">Kur</button>
+        <button class="close-btn" id="closeInstallBtn">×</button>
+    </div>
 
     <div class="container">
         <!-- Bağlantı Durum Çubuğu -->
@@ -402,8 +480,48 @@
         let offlineStartTime = null;
         let checkInterval = null;
         let temperatureChart = null;
+        let deferredPrompt = null;
 
-        // Dark mode kontrolü - Sayfa yüklendiğinde
+        // PWA Install
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Kullanıcı daha önce reddetmemişse göster
+            if (!localStorage.getItem('pwa-dismissed')) {
+                document.getElementById('installPrompt').classList.add('show');
+            }
+        });
+
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('PWA kuruldu!');
+            }
+            
+            deferredPrompt = null;
+            document.getElementById('installPrompt').classList.remove('show');
+        });
+
+        document.getElementById('closeInstallBtn').addEventListener('click', () => {
+            document.getElementById('installPrompt').classList.remove('show');
+            localStorage.setItem('pwa-dismissed', 'true');
+        });
+
+        // Service Worker kaydı
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('Service Worker kayıtlı'))
+                    .catch(err => console.log('Service Worker hatası:', err));
+            });
+        }
+
+        // Dark mode
         function initTheme() {
             const savedTheme = localStorage.getItem('theme');
             const themeToggle = document.getElementById('themeToggle');
@@ -416,7 +534,6 @@
             }
         }
 
-        // Dark mode toggle
         function toggleTheme() {
             const body = document.body;
             const themeToggle = document.getElementById('themeToggle');
@@ -431,13 +548,11 @@
                 localStorage.setItem('theme', 'light');
             }
             
-            // Grafiği güncelle
             if (temperatureChart) {
                 updateChartTheme();
             }
         }
 
-        // Grafik temasını güncelle
         function updateChartTheme() {
             const isDark = document.body.classList.contains('dark-mode');
             
@@ -450,7 +565,6 @@
             temperatureChart.update();
         }
 
-        // Fake data - Son 24 saat için
         function generateFakeData() {
             const now = Date.now();
             const data = [];
@@ -472,7 +586,6 @@
             return data;
         }
 
-        // Grafik oluştur
         function createChart() {
             const ctx = document.getElementById('temperatureChart').getContext('2d');
             const fakeData = generateFakeData();
@@ -755,7 +868,6 @@
             });
         }
 
-        // Sayfa yüklenince
         window.addEventListener('load', function() {
             initTheme();
             createChart();
