@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -20,7 +21,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -99,18 +100,37 @@
             display: block;
         }
 
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
         .card {
             background: white;
             border-radius: 20px;
             padding: 30px;
-            margin-bottom: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .card.full-width {
+            grid-column: 1 / -1;
         }
 
         h1 {
             color: #333;
             margin-bottom: 10px;
             font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -158,10 +178,10 @@
             color: #383d41;
         }
 
-        .divider {
-            height: 2px;
-            background: linear-gradient(to right, transparent, #ddd, transparent);
-            margin: 20px 0;
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
         }
 
         .refresh-btn {
@@ -175,7 +195,6 @@
             transition: all 0.3s;
             box-shadow: 0 4px 15px rgba(0,123,255,0.3);
             width: 100%;
-            margin-top: 20px;
         }
 
         .refresh-btn:hover {
@@ -193,7 +212,10 @@
             cursor: not-allowed;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
             .temp {
                 font-size: 2.5em;
             }
@@ -230,20 +252,31 @@
             </div>
         </div>
 
-        <!-- Normal Dolap -->
-        <div class="card">
-            <h1>🧊 Normal Dolap</h1>
-            <div class="temp" id="fridge">--</div>
-            <div class="timestamp" id="fridge-time">Bekleniyor...</div>
-            <div class="sensor-status ok" id="fridge-status">Veri Bekleniyor</div>
+        <!-- Anlık Sıcaklıklar -->
+        <div class="grid">
+            <!-- Normal Dolap -->
+            <div class="card">
+                <h1>🧊 Normal Dolap</h1>
+                <div class="temp" id="fridge">--</div>
+                <div class="timestamp" id="fridge-time">Bekleniyor...</div>
+                <div class="sensor-status ok" id="fridge-status">Veri Bekleniyor</div>
+            </div>
+
+            <!-- Dondurucu -->
+            <div class="card">
+                <h1>❄️ Dondurucu</h1>
+                <div class="temp" id="freezer">--</div>
+                <div class="timestamp" id="freezer-time">Bekleniyor...</div>
+                <div class="sensor-status ok" id="freezer-status">Veri Bekleniyor</div>
+            </div>
         </div>
 
-        <!-- Dondurucu -->
-        <div class="card">
-            <h1>❄️ Dondurucu</h1>
-            <div class="temp" id="freezer">--</div>
-            <div class="timestamp" id="freezer-time">Bekleniyor...</div>
-            <div class="sensor-status ok" id="freezer-status">Veri Bekleniyor</div>
+        <!-- 24 Saatlik Grafik -->
+        <div class="card full-width">
+            <h2>📊 Son 24 Saat - Sıcaklık Değişimi</h2>
+            <div class="chart-container">
+                <canvas id="temperatureChart"></canvas>
+            </div>
         </div>
 
         <!-- Yenile Butonu -->
@@ -266,6 +299,110 @@
         let wasOffline = false;
         let offlineStartTime = null;
         let checkInterval = null;
+        let temperatureChart = null;
+
+        // Fake data - Son 24 saat için
+        function generateFakeData() {
+            const now = Date.now();
+            const data = [];
+            
+            // 24 saat = 1440 dakika, her 30 dakikada bir veri = 48 nokta
+            for (let i = 48; i >= 0; i--) {
+                const timestamp = now - (i * 30 * 60 * 1000); // 30 dakika geriye git
+                const hour = new Date(timestamp).getHours();
+                
+                // Gece daha soğuk, gündüz biraz daha sıcak (gerçekçi simülasyon)
+                const fridgeBase = hour >= 0 && hour < 6 ? 2 : 4;
+                const freezerBase = hour >= 0 && hour < 6 ? -18 : -16;
+                
+                data.push({
+                    time: timestamp,
+                    fridge: fridgeBase + (Math.random() * 2 - 1), // ±1 derece sapma
+                    freezer: freezerBase + (Math.random() * 2 - 1)
+                });
+            }
+            
+            return data;
+        }
+
+        // Grafik oluştur
+        function createChart() {
+            const ctx = document.getElementById('temperatureChart').getContext('2d');
+            const fakeData = generateFakeData();
+            
+            const labels = fakeData.map(d => {
+                const date = new Date(d.time);
+                return date.getHours() + ':' + String(date.getMinutes()).padStart(2, '0');
+            });
+            
+            temperatureChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '🧊 Normal Dolap',
+                            data: fakeData.map(d => d.fridge),
+                            borderColor: '#007BFF',
+                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '❄️ Dondurucu',
+                            data: fakeData.map(d => d.freezer),
+                            borderColor: '#6f42c1',
+                            backgroundColor: 'rgba(111, 66, 193, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '°C';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Zaman'
+                            },
+                            ticks: {
+                                maxTicksLimit: 12
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Sıcaklık (°C)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
 
         // Zaman formatı
         function formatTime(date) {
@@ -280,7 +417,7 @@
             });
         }
 
-        // Geçen süreyi hesapla (örn: "2 dakika önce")
+        // Geçen süreyi hesapla
         function timeAgo(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
             
@@ -342,10 +479,8 @@
             const timeSinceUpdate = new Date() - lastOverallUpdate;
             const secondsSinceUpdate = Math.floor(timeSinceUpdate / 1000);
             
-            // 60 saniyeden uzun veri gelmemişse offline
             if (secondsSinceUpdate > 60) {
                 if (isOnline) {
-                    // Yeni kesinti tespit edildi
                     isOnline = false;
                     wasOffline = true;
                     offlineStartTime = new Date();
@@ -357,13 +492,12 @@
                 powerAlertTime.innerText = timeAgo(lastOverallUpdate);
             } else {
                 if (!isOnline && wasOffline) {
-                    // Bağlantı yeniden kuruldu
                     const outageDuration = new Date() - offlineStartTime;
                     document.getElementById('outageDuration').innerText = formatDuration(outageDuration);
                     reconnectAlert.classList.add('show');
                     setTimeout(() => {
                         reconnectAlert.classList.remove('show');
-                    }, 10000); // 10 saniye sonra kapat
+                    }, 10000);
                 }
                 
                 isOnline = true;
@@ -374,7 +508,6 @@
             
             lastUpdateText.innerText = 'Son güncelleme: ' + timeAgo(lastOverallUpdate);
             
-            // Sensör durumlarını güncelle
             updateSensorStatus('fridge', lastFridgeUpdate);
             updateSensorStatus('freezer', lastFreezerUpdate);
         }
@@ -422,7 +555,7 @@
             updateConnectionStatus();
         }
 
-        // Otomatik dinleme (Real-time)
+        // Otomatik dinleme
         firebase.database().ref("fridge").on("value", function (snapshot) {
             const value = snapshot.val();
             if (value !== null) {
@@ -468,6 +601,11 @@
                 }, 500);
             });
         }
+
+        // Sayfa yüklenince grafiği oluştur
+        window.addEventListener('load', function() {
+            createChart();
+        });
     </script>
 </body>
 </html>
