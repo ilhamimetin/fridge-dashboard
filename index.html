@@ -1,34 +1,119 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>Buzdolabı Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
+        * {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            padding: 20px;
         }
 
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
+        }
+
+        .status-bar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.online {
+            background: #28a745;
+            box-shadow: 0 0 10px #28a745;
+        }
+
+        .status-dot.offline {
+            background: #dc3545;
+            box-shadow: 0 0 10px #dc3545;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .last-update {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .alert {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .alert.danger {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .card {
             background: white;
             border-radius: 20px;
             padding: 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
 
         h1 {
             color: #333;
             margin-bottom: 10px;
             font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .temp {
@@ -41,16 +126,42 @@
         .timestamp {
             color: #666;
             font-size: 0.9em;
-            margin: 5px 0 20px 0;
+            margin: 5px 0 15px 0;
             font-style: italic;
         }
 
-        .last-update {
-            background: #f0f0f0;
-            padding: 15px;
-            border-radius: 10px;
+        .sensor-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        .sensor-status.ok {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .sensor-status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .sensor-status.danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .sensor-status.offline {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #ddd, transparent);
             margin: 20px 0;
-            color: #555;
         }
 
         .refresh-btn {
@@ -62,74 +173,80 @@
             font-size: 1.1em;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+            width: 100%;
+            margin-top: 20px;
         }
 
         .refresh-btn:hover {
             background: #0056b3;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+            box-shadow: 0 6px 20px rgba(0,123,255,0.4);
         }
 
         .refresh-btn:active {
             transform: translateY(0);
         }
 
-        .divider {
-            height: 2px;
-            background: linear-gradient(to right, transparent, #ddd, transparent);
-            margin: 30px 0;
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
-        .status {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 15px;
-            font-size: 0.85em;
-            margin-top: 5px;
-        }
-
-        .status.ok {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status.warning {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status.danger {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .loading {
-            color: #999;
-            font-style: italic;
+        @media (max-width: 600px) {
+            .temp {
+                font-size: 2.5em;
+            }
+            h1 {
+                font-size: 1.4em;
+            }
         }
     </style>
 </head>
-
 <body>
     <div class="container">
-        <h1>🧊 Normal Dolap</h1>
-        <div class="temp" id="fridge">--</div>
-        <div class="timestamp" id="fridge-time">Bekleniyor...</div>
-        <div class="status ok" id="fridge-status">Normal</div>
-
-        <div class="divider"></div>
-
-        <h1>❄️ Dondurucu</h1>
-        <div class="temp" id="freezer">--</div>
-        <div class="timestamp" id="freezer-time">Bekleniyor...</div>
-        <div class="status ok" id="freezer-status">Normal</div>
-
-        <div class="last-update">
-            <strong>Son Güncelleme:</strong><br>
-            <span id="last-update-time">Henüz veri alınmadı</span>
+        <!-- Bağlantı Durum Çubuğu -->
+        <div class="status-bar">
+            <div class="connection-status">
+                <div class="status-indicator">
+                    <div class="status-dot online" id="statusDot"></div>
+                    <span id="statusText">Bağlantı Kuruluyor...</span>
+                </div>
+                <div class="last-update" id="lastUpdateText">
+                    Son güncelleme: --
+                </div>
+            </div>
+            
+            <!-- Elektrik Kesintisi Uyarısı -->
+            <div class="alert danger" id="powerAlert">
+                <strong>⚠️ Elektrik Kesintisi Tespit Edildi!</strong><br>
+                Son veri: <span id="powerAlertTime">--</span> önce alındı.
+            </div>
+            
+            <!-- Bağlantı Yeniden Kuruldu -->
+            <div class="alert success" id="reconnectAlert">
+                <strong>✓ Bağlantı Yeniden Kuruldu!</strong><br>
+                Elektrik kesintisi süresi: <span id="outageDuration">--</span>
+            </div>
         </div>
 
+        <!-- Normal Dolap -->
+        <div class="card">
+            <h1>🧊 Normal Dolap</h1>
+            <div class="temp" id="fridge">--</div>
+            <div class="timestamp" id="fridge-time">Bekleniyor...</div>
+            <div class="sensor-status ok" id="fridge-status">Veri Bekleniyor</div>
+        </div>
+
+        <!-- Dondurucu -->
+        <div class="card">
+            <h1>❄️ Dondurucu</h1>
+            <div class="temp" id="freezer">--</div>
+            <div class="timestamp" id="freezer-time">Bekleniyor...</div>
+            <div class="sensor-status ok" id="freezer-status">Veri Bekleniyor</div>
+        </div>
+
+        <!-- Yenile Butonu -->
         <button class="refresh-btn" onclick="refreshData()">🔄 Verileri Yenile</button>
     </div>
 
@@ -144,11 +261,16 @@
 
         let lastFridgeUpdate = null;
         let lastFreezerUpdate = null;
+        let lastOverallUpdate = null;
+        let isOnline = true;
+        let wasOffline = false;
+        let offlineStartTime = null;
+        let checkInterval = null;
 
         // Zaman formatı
         function formatTime(date) {
-            return date.toLocaleTimeString('tr-TR', {
-                hour: '2-digit',
+            return date.toLocaleTimeString('tr-TR', { 
+                hour: '2-digit', 
                 minute: '2-digit',
                 second: '2-digit'
             }) + ' - ' + date.toLocaleDateString('tr-TR', {
@@ -158,16 +280,121 @@
             });
         }
 
+        // Geçen süreyi hesapla (örn: "2 dakika önce")
+        function timeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            if (seconds < 60) return seconds + ' saniye önce';
+            
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return minutes + ' dakika önce';
+            
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + ' saat önce';
+            
+            const days = Math.floor(hours / 24);
+            return days + ' gün önce';
+        }
+
+        // Süreyi dakika:saniye formatında göster
+        function formatDuration(milliseconds) {
+            const totalSeconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            
+            if (minutes > 0) {
+                return minutes + ' dakika ' + seconds + ' saniye';
+            }
+            return seconds + ' saniye';
+        }
+
         // Sıcaklık durumu kontrolü
-        function checkStatus(temp, type) {
+        function checkStatus(temp, type, isConnected) {
+            if (!isConnected) {
+                return { class: 'offline', text: '⚠️ Bağlantı Yok' };
+            }
+            
             if (type === 'fridge') {
-                if (temp > 8) return { class: 'danger', text: '⚠️ Çok Sıcak!' };
+                if (temp > 8) return { class: 'danger', text: '🔥 Çok Sıcak!' };
                 if (temp > 6) return { class: 'warning', text: '⚡ Dikkat' };
                 return { class: 'ok', text: '✓ Normal' };
             } else {
-                if (temp > -10) return { class: 'danger', text: '⚠️ Çok Sıcak!' };
+                if (temp > -10) return { class: 'danger', text: '🔥 Çok Sıcak!' };
                 if (temp > -15) return { class: 'warning', text: '⚡ Dikkat' };
                 return { class: 'ok', text: '✓ Normal' };
+            }
+        }
+
+        // Bağlantı durumunu güncelle
+        function updateConnectionStatus() {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const lastUpdateText = document.getElementById('lastUpdateText');
+            const powerAlert = document.getElementById('powerAlert');
+            const reconnectAlert = document.getElementById('reconnectAlert');
+            const powerAlertTime = document.getElementById('powerAlertTime');
+            
+            if (!lastOverallUpdate) {
+                statusText.innerText = 'Bağlantı Kuruluyor...';
+                return;
+            }
+            
+            const timeSinceUpdate = new Date() - lastOverallUpdate;
+            const secondsSinceUpdate = Math.floor(timeSinceUpdate / 1000);
+            
+            // 60 saniyeden uzun veri gelmemişse offline
+            if (secondsSinceUpdate > 60) {
+                if (isOnline) {
+                    // Yeni kesinti tespit edildi
+                    isOnline = false;
+                    wasOffline = true;
+                    offlineStartTime = new Date();
+                    statusDot.className = 'status-dot offline';
+                    statusText.innerText = '🔴 Bağlantı Kesildi';
+                    powerAlert.classList.add('show');
+                    reconnectAlert.classList.remove('show');
+                }
+                powerAlertTime.innerText = timeAgo(lastOverallUpdate);
+            } else {
+                if (!isOnline && wasOffline) {
+                    // Bağlantı yeniden kuruldu
+                    const outageDuration = new Date() - offlineStartTime;
+                    document.getElementById('outageDuration').innerText = formatDuration(outageDuration);
+                    reconnectAlert.classList.add('show');
+                    setTimeout(() => {
+                        reconnectAlert.classList.remove('show');
+                    }, 10000); // 10 saniye sonra kapat
+                }
+                
+                isOnline = true;
+                statusDot.className = 'status-dot online';
+                statusText.innerText = '🟢 Bağlı';
+                powerAlert.classList.remove('show');
+            }
+            
+            lastUpdateText.innerText = 'Son güncelleme: ' + timeAgo(lastOverallUpdate);
+            
+            // Sensör durumlarını güncelle
+            updateSensorStatus('fridge', lastFridgeUpdate);
+            updateSensorStatus('freezer', lastFreezerUpdate);
+        }
+
+        // Sensör durumunu güncelle
+        function updateSensorStatus(type, lastUpdate) {
+            if (!lastUpdate) return;
+            
+            const timeSinceUpdate = new Date() - lastUpdate;
+            const secondsSinceUpdate = Math.floor(timeSinceUpdate / 1000);
+            const isConnected = secondsSinceUpdate <= 60;
+            
+            const tempEl = document.getElementById(type);
+            const statusEl = document.getElementById(type + '-status');
+            const currentTemp = parseFloat(tempEl.innerText);
+            
+            if (!isNaN(currentTemp)) {
+                const status = checkStatus(currentTemp, type, isConnected);
+                statusEl.className = 'sensor-status ' + status.class;
+                statusEl.innerText = status.text;
             }
         }
 
@@ -177,29 +404,22 @@
             const tempEl = document.getElementById(type);
             const timeEl = document.getElementById(type + '-time');
             const statusEl = document.getElementById(type + '-status');
-
+            
             tempEl.innerText = value + ' °C';
             timeEl.innerText = formatTime(now);
-
-            const status = checkStatus(value, type);
-            statusEl.className = 'status ' + status.class;
+            
+            const status = checkStatus(value, type, true);
+            statusEl.className = 'sensor-status ' + status.class;
             statusEl.innerText = status.text;
-
+            
             if (type === 'fridge') {
                 lastFridgeUpdate = now;
             } else {
                 lastFreezerUpdate = now;
             }
-
-            updateLastUpdateTime();
-        }
-
-        // Son güncelleme zamanını göster
-        function updateLastUpdateTime() {
-            const lastUpdate = lastFridgeUpdate > lastFreezerUpdate ? lastFridgeUpdate : lastFreezerUpdate;
-            if (lastUpdate) {
-                document.getElementById('last-update-time').innerText = formatTime(lastUpdate);
-            }
+            
+            lastOverallUpdate = now;
+            updateConnectionStatus();
         }
 
         // Otomatik dinleme (Real-time)
@@ -217,37 +437,37 @@
             }
         });
 
+        // Her 5 saniyede bir bağlantı durumunu kontrol et
+        checkInterval = setInterval(updateConnectionStatus, 5000);
+
         // Manuel yenileme butonu
         function refreshData() {
             const btn = document.querySelector('.refresh-btn');
             btn.innerText = '⏳ Yenileniyor...';
             btn.disabled = true;
 
-            // Firebase'den son veriyi çek
-            firebase.database().ref("fridge").once("value").then(function (snapshot) {
+            firebase.database().ref("fridge").once("value").then(function(snapshot) {
                 const value = snapshot.val();
                 if (value !== null) {
                     updateDisplay(value, 'fridge');
                 }
             });
 
-            firebase.database().ref("freezer").once("value").then(function (snapshot) {
+            firebase.database().ref("freezer").once("value").then(function(snapshot) {
                 const value = snapshot.val();
                 if (value !== null) {
                     updateDisplay(value, 'freezer');
                 }
-
-                // Buton animasyonu
+                
                 setTimeout(() => {
                     btn.innerText = '✓ Güncellendi!';
                     setTimeout(() => {
                         btn.innerText = '🔄 Verileri Yenile';
                         btn.disabled = false;
-                    }, 2000);
+                    }, 1000);
                 }, 500);
             });
         }
     </script>
 </body>
-
 </html>
