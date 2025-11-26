@@ -5,6 +5,16 @@ var firebaseConfig = {
     databaseURL: "https://fridgemonitor-76775-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "fridgemonitor-76775"
 };
+
+// Bildirim değişkenleri
+let notificationPermission = false;
+let lastNotificationTime = {
+    fridge: 0,
+    freezer: 0,
+    power: 0
+};
+const NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 dakika (spam önleme)
+
 firebase.initializeApp(firebaseConfig);
 
 // Global Variables
@@ -68,6 +78,104 @@ function initTheme() {
         themeToggle.innerText = '🌙';
     }
 }
+
+// Bildirim İzni İste
+async function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+        console.log('Bu tarayıcı bildirimleri desteklemiyor');
+        return false;
+    }
+    
+    if (Notification.permission === 'granted') {
+        notificationPermission = true;
+        return true;
+    }
+    
+    if (Notification.permission !== 'denied') {
+        const permission = await Notification.requestPermission();
+        notificationPermission = permission === 'granted';
+        return notificationPermission;
+    }
+    
+    return false;
+}
+
+// Bildirim Gönder
+function sendNotification(title, body, icon = '⚠️') {
+    if (!notificationPermission) return;
+    
+    // Service Worker varsa onunla gönder
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then(registration => {
+            registration.showNotification(title, {
+                body: body,
+                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="70" font-size="70">' + icon + '</text></svg>',
+                badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="70" font-size="70">🧊</text></svg>',
+                vibrate: [200, 100, 200],
+                requireInteraction: true
+            });
+        });
+    } else {
+        // Fallback: Normal notification
+        new Notification(title, {
+            body: body,
+            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="70" font-size="70">' + icon + '</text></svg>'
+        });
+    }
+}
+
+// Sıcaklık Kontrolü ve Bildirim
+function checkTemperatureAlert(temp, type) {
+    const now = Date.now();
+    
+    // Spam önleme - 5 dakikada bir bildirim
+    if (now - lastNotificationTime[type] < NOTIFICATION_COOLDOWN) {
+        return;
+    }
+    
+    if (type === 'fridge' && temp > 8) {
+        sendNotification(
+            '⚠️ Buzdolabı Sıcak!',
+            `Normal dolap sıcaklığı ${temp.toFixed(1)}°C - Normal değerin üzerinde!`,
+            '🔥'
+        );
+        lastNotificationTime[type] = now;
+    } else if (type === 'freezer' && temp > -10) {
+        sendNotification(
+            '⚠️ Dondurucu Sıcak!',
+            `Dondurucu sıcaklığı ${temp.toFixed(1)}°C - Normal değerin üzerinde!`,
+            '🔥'
+        );
+        lastNotificationTime[type] = now;
+    }
+}
+
+// Elektrik Kesintisi Bildirimi
+function notifyPowerOutage() {
+    const now = Date.now();
+    
+    if (now - lastNotificationTime.power < NOTIFICATION_COOLDOWN) {
+        return;
+    }
+    
+    sendNotification(
+        '⚡ Elektrik Kesintisi!',
+        'Buzdolabından 1 dakikadır veri gelmiyor. Elektrik kesilmiş olabilir.',
+        '⚡'
+    );
+    lastNotificationTime.power = now;
+}
+
+// Bağlantı Kuruldu Bildirimi
+function notifyReconnected(duration) {
+    sendNotification(
+        '✅ Bağlantı Yeniden Kuruldu',
+        `Elektrik geri geldi! Kesinti süresi: ${duration}`,
+        '✅'
+    );
+}
+
+
 
 function toggleTheme() {
     const body = document.body;
@@ -260,6 +368,9 @@ function updateConnectionStatus() {
             statusText.innerText = '🔴 Bağlantı Kesildi';
             powerAlert.classList.add('show');
             reconnectAlert.classList.remove('show');
+
+            // Bildirim gönder
+            notifyPowerOutage();
         }
         powerAlertTime.innerText = timeAgo(lastOverallUpdate);
     } else {
@@ -268,6 +379,9 @@ function updateConnectionStatus() {
             document.getElementById('outageDuration').innerText = formatDuration(outageDuration);
             reconnectAlert.classList.add('show');
             setTimeout(() => reconnectAlert.classList.remove('show'), 10000);
+
+            // Bildirim gönder
+            notifyReconnected(durationText);
         }
         isOnline = true;
         statusDot.className = 'status-dot online';
@@ -312,6 +426,9 @@ function updateDisplay(value, type) {
     else lastFreezerUpdate = now;
     
     lastOverallUpdate = now;
+    
+    // Sıcaklık uyarısı kontrolü
+    checkTemperatureAlert(value, type);
     updateConnectionStatus();
 }
 
@@ -356,4 +473,9 @@ function refreshData() {
 window.addEventListener('load', function() {
     initTheme();
     createChart();
+
+    // Bildirim izni iste (5 saniye sonra, kullanıcıyı rahatsız etmemek için)
+    setTimeout(() => {
+        requestNotificationPermission();
+    }, 5000);
 });
