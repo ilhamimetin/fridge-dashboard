@@ -41,8 +41,8 @@ body {
 
 .theme-toggle {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    top: 10px;
+    right: 10px;
     background: var(--card-bg);
     border: none;
     border-radius: 50%;
