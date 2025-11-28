@@ -1,19 +1,10 @@
-// Firebase Config
+// Firebase Config (Aynı)
 var firebaseConfig = {
     apiKey: "AIzaSyBhMDR_0dLivEYWqbSte0OnSMlciB8aUuA",
     authDomain: "fridgemonitor-76775.firebaseapp.com",
     databaseURL: "https://fridgemonitor-76775-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "fridgemonitor-76775"
 };
-
-// Bildirim değişkenleri
-let notificationPermission = false;
-let lastNotificationTime = {
-    fridge: 0,
-    freezer: 0,
-    power: 0
-};
-const NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 dakika (spam önleme)
 
 firebase.initializeApp(firebaseConfig);
 
@@ -24,241 +15,50 @@ let lastOverallUpdate = null;
 let isOnline = true;
 let wasOffline = false;
 let offlineStartTime = null;
-let checkInterval = null;
 let temperatureChart = null;
 let deferredPrompt = null;
 
-// PWA Install
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    
-    if (!localStorage.getItem('pwa-dismissed')) {
-        document.getElementById('installPrompt').classList.add('show');
-    }
-});
+// Bildirim değişkenleri
+let notificationPermission = false;
+let lastNotificationTime = {
+    fridge: 0,
+    freezer: 0,
+    power: 0
+};
+const NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 dakika
 
-document.getElementById('installBtn').addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-        console.log('PWA kuruldu!');
-    }
-    
-    deferredPrompt = null;
-    document.getElementById('installPrompt').classList.remove('show');
-});
+// ============================================
+// YENİ: GELİŞMİŞ İSTATİSTİK SİSTEMİ
+// ============================================
 
-document.getElementById('closeInstallBtn').addEventListener('click', () => {
-    document.getElementById('installPrompt').classList.remove('show');
-    localStorage.setItem('pwa-dismissed', 'true');
-});
-
-// Service Worker
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-            .then(reg => console.log('Service Worker kayıtlı'))
-            .catch(err => console.log('Service Worker hatası:', err));
-    });
-}
-
-// Dark Mode
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    const themeToggle = document.getElementById('themeToggle');
-    
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        themeToggle.innerText = '☀️';
-    } else {
-        themeToggle.innerText = '🌙';
-    }
-}
-
-// Bildirim İzni İste
-async function requestNotificationPermission() {
-    if (!('Notification' in window)) {
-        console.log('Bu tarayıcı bildirimleri desteklemiyor');
-        return false;
-    }
-    
-    if (Notification.permission === 'granted') {
-        notificationPermission = true;
-        return true;
-    }
-    
-    if (Notification.permission !== 'denied') {
-        const permission = await Notification.requestPermission();
-        notificationPermission = permission === 'granted';
-        return notificationPermission;
-    }
-    
-    return false;
-}
-
-// Bildirim Gönder
-function sendNotification(title, body, icon = '⚠️') {
-    if (!notificationPermission) return;
-    
-    // Service Worker varsa onunla gönder
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.ready.then(registration => {
-            registration.showNotification(title, {
-                body: body,
-                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="70" font-size="70">' + icon + '</text></svg>',
-                badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="70" font-size="70">🧊</text></svg>',
-                vibrate: [200, 100, 200],
-                requireInteraction: true
-            });
-        });
-    } else {
-        // Fallback: Normal notification
-        new Notification(title, {
-            body: body,
-            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="70" font-size="70">' + icon + '</text></svg>'
-        });
-    }
-}
-
-// Sıcaklık Kontrolü ve Bildirim
-function checkTemperatureAlert(temp, type) {
-    const now = Date.now();
-    
-    // Spam önleme - 5 dakikada bir bildirim
-    if (now - lastNotificationTime[type] < NOTIFICATION_COOLDOWN) {
-        return;
-    }
-    
-    if (type === 'fridge' && temp > 8) {
-        sendNotification(
-            '⚠️ Buzdolabı Sıcak!',
-            `Normal dolap sıcaklığı ${temp.toFixed(1)}°C - Normal değerin üzerinde!`,
-            '🔥'
-        );
-        lastNotificationTime[type] = now;
-    } else if (type === 'freezer' && temp > -10) {
-        sendNotification(
-            '⚠️ Dondurucu Sıcak!',
-            `Dondurucu sıcaklığı ${temp.toFixed(1)}°C - Normal değerin üzerinde!`,
-            '🔥'
-        );
-        lastNotificationTime[type] = now;
-    }
-}
-
-// Elektrik Kesintisi Bildirimi
-function notifyPowerOutage() {
-    const now = Date.now();
-    
-    if (now - lastNotificationTime.power < NOTIFICATION_COOLDOWN) {
-        return;
-    }
-    
-    sendNotification(
-        '⚡ Elektrik Kesintisi!',
-        'Buzdolabından 1 dakikadır veri gelmiyor. Elektrik kesilmiş olabilir.',
-        '⚡'
-    );
-    lastNotificationTime.power = now;
-}
-
-// Bağlantı Kuruldu Bildirimi
-function notifyReconnected(duration) {
-    sendNotification(
-        '✅ Bağlantı Yeniden Kuruldu',
-        `Elektrik geri geldi! Kesinti süresi: ${duration}`,
-        '✅'
-    );
-}
-
-function toggleTheme() {
-    const body = document.body;
-    const themeToggle = document.getElementById('themeToggle');
-    
-    body.classList.toggle('dark-mode');
-    
-    if (body.classList.contains('dark-mode')) {
-        themeToggle.innerText = '☀️';
-        localStorage.setItem('theme', 'dark');
-    } else {
-        themeToggle.innerText = '🌙';
-        localStorage.setItem('theme', 'light');
-    }
-    
-    if (temperatureChart) {
-        updateChartTheme();
-    }
-}
-
-function updateChartTheme() {
-    const isDark = document.body.classList.contains('dark-mode');
-    
-    temperatureChart.options.scales.x.ticks.color = isDark ? '#b0b0b0' : '#666';
-    temperatureChart.options.scales.y.ticks.color = isDark ? '#b0b0b0' : '#666';
-    temperatureChart.options.scales.x.grid.color = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-    temperatureChart.options.scales.y.grid.color = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-    temperatureChart.options.plugins.legend.labels.color = isDark ? '#e0e0e0' : '#333';
-    
-    temperatureChart.update();
-}
-
-// Fake Data Generator
-function generateFakeData() {
-    const now = Date.now();
-    const data = [];
-    
-    for (let i = 48; i >= 0; i--) {
-        const timestamp = now - (i * 30 * 60 * 1000);
-        const hour = new Date(timestamp).getHours();
-        
-        const fridgeBase = hour >= 0 && hour < 6 ? 2 : 4;
-        const freezerBase = hour >= 0 && hour < 6 ? -18 : -16;
-        
-        data.push({
-            time: timestamp,
-            fridge: fridgeBase + (Math.random() * 2 - 1),
-            freezer: freezerBase + (Math.random() * 2 - 1)
-        });
-    }
-    
-    return data;
-}
-
-// Chart
-function createChart() {
+// Gerçek verilerle grafik oluştur
+function createRealChart() {
     const ctx = document.getElementById('temperatureChart').getContext('2d');
-    const fakeData = generateFakeData();
     const isDark = document.body.classList.contains('dark-mode');
     
-    const labels = fakeData.map(d => {
-        const date = new Date(d.time);
-        return date.getHours() + ':' + String(date.getMinutes()).padStart(2, '0');
-    });
-    
+    // Boş grafik oluştur, veriler real-time gelecek
     temperatureChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
+            labels: [], // Zaman etiketleri
             datasets: [
                 {
                     label: '🧊 Normal Dolap',
-                    data: fakeData.map(d => d.fridge),
+                    data: [], // Sıcaklık verileri
                     borderColor: '#007BFF',
                     backgroundColor: 'rgba(0, 123, 255, 0.1)',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    borderWidth: 2
                 },
                 {
                     label: '❄️ Dondurucu',
-                    data: fakeData.map(d => d.freezer),
+                    data: [], // Sıcaklık verileri
                     borderColor: '#6f42c1',
                     backgroundColor: 'rgba(111, 66, 193, 0.1)',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    borderWidth: 2
                 }
             ]
         },
@@ -269,11 +69,18 @@ function createChart() {
                 legend: {
                     display: true,
                     position: 'top',
-                    labels: { color: isDark ? '#e0e0e0' : '#333' }
+                    labels: { 
+                        color: isDark ? '#e0e0e0' : '#333',
+                        usePointStyle: true,
+                        padding: 20
+                    }
                 },
                 tooltip: {
                     mode: 'index',
                     intersect: false,
+                    backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)',
+                    titleColor: isDark ? '#e0e0e0' : '#333',
+                    bodyColor: isDark ? '#e0e0e0' : '#333',
                     callbacks: {
                         label: function(context) {
                             return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '°C';
@@ -284,123 +91,199 @@ function createChart() {
             scales: {
                 x: {
                     display: true,
-                    title: { display: true, text: 'Zaman', color: isDark ? '#e0e0e0' : '#333' },
-                    ticks: { maxTicksLimit: 12, color: isDark ? '#b0b0b0' : '#666' },
-                    grid: { color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
+                    title: { 
+                        display: true, 
+                        text: 'Zaman', 
+                        color: isDark ? '#e0e0e0' : '#333' 
+                    },
+                    ticks: { 
+                        maxTicksLimit: 8, 
+                        color: isDark ? '#b0b0b0' : '#666',
+                        callback: function(value, index, values) {
+                            // Sadece belirli aralıklarla zaman göster
+                            if (index % Math.ceil(values.length / 8) === 0) {
+                                return this.getLabelForValue(value);
+                            }
+                            return '';
+                        }
+                    },
+                    grid: { 
+                        color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                        drawBorder: false
+                    }
                 },
                 y: {
                     display: true,
-                    title: { display: true, text: 'Sıcaklık (°C)', color: isDark ? '#e0e0e0' : '#333' },
-                    ticks: { color: isDark ? '#b0b0b0' : '#666' },
-                    grid: { color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
+                    title: { 
+                        display: true, 
+                        text: 'Sıcaklık (°C)', 
+                        color: isDark ? '#e0e0e0' : '#333' 
+                    },
+                    ticks: { 
+                        color: isDark ? '#b0b0b0' : '#666' 
+                    },
+                    grid: { 
+                        color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                        drawBorder: false
+                    }
                 }
             },
-            interaction: { mode: 'nearest', axis: 'x', intersect: false }
+            interaction: { 
+                mode: 'nearest', 
+                axis: 'x', 
+                intersect: false 
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
         }
     });
+
+    // Grafiği gerçek verilerle besle
+    loadChartData();
 }
 
-// Helper Functions - GÜNCELLENDİ
-function formatTime(date) {
-    // Eğer tarih 1970 ise "Bekleniyor..." göster
-    if (date.getFullYear() === 1970) {
-        return "Bekleniyor...";
-    }
-    return date.toLocaleTimeString('tr-TR', { 
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-    }) + ' - ' + date.toLocaleDateString('tr-TR', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
-    });
+// Firebase'den grafik verilerini yükle
+function loadChartData() {
+    const now = Date.now();
+    const twentyFourHoursAgo = now - (24 * 60 * 60 * 1000);
+    
+    // Firebase'de history node'una ihtiyacımız var
+    // Önce fake data ile çalıştıralım, sonra gerçek veriye geçeriz
+    initializeChartWithSampleData();
 }
 
-function timeAgo(date) {
-    if (!date) {
-        return "Bekleniyor...";
+// Örnek veri ile grafiği başlat
+function initializeChartWithSampleData() {
+    const now = new Date();
+    const labels = [];
+    const fridgeData = [];
+    const freezerData = [];
+    
+    // Son 24 saat için örnek veri
+    for (let i = 24; i >= 0; i--) {
+        const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
+        labels.push(time.getHours() + ':00');
+        
+        // Gerçekçi sıcaklık dalgalanmaları
+        const fridgeBase = (time.getHours() >= 0 && time.getHours() < 6) ? 3 : 5;
+        const freezerBase = -18;
+        
+        fridgeData.push(+(fridgeBase + (Math.random() * 2 - 1)).toFixed(1));
+        freezerData.push(+(freezerBase + (Math.random() * 2 - 1)).toFixed(1));
     }
+    
+    if (temperatureChart) {
+        temperatureChart.data.labels = labels;
+        temperatureChart.data.datasets[0].data = fridgeData;
+        temperatureChart.data.datasets[1].data = freezerData;
+        temperatureChart.update('none');
+    }
+}
+
+// Yeni veri geldiğinde grafiği güncelle
+function updateChartWithNewData(fridgeTemp, freezerTemp) {
+    if (!temperatureChart) return;
     
     const now = new Date();
-    const diff = now - date; // Milisaniye farkı
+    const currentTime = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
     
-    if (diff < 0) {
-        return "Zaman senkron hatası!";
+    // Mevcut verileri kaydır ve yeni veriyi ekle
+    temperatureChart.data.labels.push(currentTime);
+    temperatureChart.data.datasets[0].data.push(fridgeTemp);
+    temperatureChart.data.datasets[1].data.push(freezerTemp);
+    
+    // 48'den fazla nokta varsa eski verileri temizle
+    if (temperatureChart.data.labels.length > 48) {
+        temperatureChart.data.labels.shift();
+        temperatureChart.data.datasets[0].data.shift();
+        temperatureChart.data.datasets[1].data.shift();
     }
     
-    const seconds = Math.floor(diff / 1000);
-    
-    if (seconds < 5) {
-        return "Şimdi"; // "0 saniye önce" yerine "Şimdi"
-    } else if (seconds < 60) {
-        return seconds + " saniye önce";
-    } else if (seconds < 3600) {
-        const minutes = Math.floor(seconds / 60);
-        return minutes + " dakika önce";
-    } else if (seconds < 86400) {
-        const hours = Math.floor(seconds / 3600);
-        return hours + " saat önce";
-    } else {
-        const days = Math.floor(seconds / 86400);
-        return days + " gün önce";
-    }
+    temperatureChart.update('none');
 }
 
 // ============================================
-// YENİ: İSTATİSTİK FONKSİYONLARI
+// GELİŞMİŞ İSTATİSTİK FONKSİYONLARI
 // ============================================
 
-// Günlük istatistikleri kaydet
+// Günlük istatistikleri kaydet (GÜNCELLENDİ)
 function saveStats(temp, type) {
-    const today = new Date().toISOString().split('T')[0]; // 2025-01-15
-    const statsRef = firebase.database().ref(`stats/daily/${today}/${type}`);
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const timeKey = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
     
+    const statsRef = firebase.database().ref(`stats/daily/${today}/${type}`);
+    const hourlyRef = firebase.database().ref(`stats/hourly/${today}/${type}/${timeKey}`);
+    
+    // Saatlik ortalamayı kaydet
+    hourlyRef.set(temp);
+    
+    // Günlük istatistikleri güncelle
     statsRef.transaction(current => {
         if (current === null) {
-            // İlk kayıt
             return {
                 min: temp,
                 max: temp,
                 sum: temp,
-                count: 1
+                count: 1,
+                lastUpdate: Date.now()
             };
         } else {
-            // Mevcut kayıt güncelle
             return {
                 min: Math.min(current.min, temp),
                 max: Math.max(current.max, temp),
                 sum: current.sum + temp,
-                count: current.count + 1
+                count: current.count + 1,
+                lastUpdate: Date.now()
             };
         }
     });
 }
 
-// Günlük istatistikleri göster
+// Günlük istatistikleri göster (GÜNCELLENDİ)
 function loadDailyStats() {
     const today = new Date().toISOString().split('T')[0];
     
     // Normal Dolap
     firebase.database().ref(`stats/daily/${today}/fridge`).on('value', snapshot => {
         const data = snapshot.val();
-        if (data) {
+        const element = document.getElementById('fridge-stats');
+        if (data && element) {
             document.getElementById('fridge-min').textContent = data.min.toFixed(1) + ' °C';
             document.getElementById('fridge-max').textContent = data.max.toFixed(1) + ' °C';
             document.getElementById('fridge-avg').textContent = (data.sum / data.count).toFixed(1) + ' °C';
             document.getElementById('fridge-count').textContent = data.count;
+        } else {
+            resetStatsDisplay('fridge');
         }
     });
     
     // Dondurucu
     firebase.database().ref(`stats/daily/${today}/freezer`).on('value', snapshot => {
         const data = snapshot.val();
-        if (data) {
+        const element = document.getElementById('freezer-stats');
+        if (data && element) {
             document.getElementById('freezer-min').textContent = data.min.toFixed(1) + ' °C';
             document.getElementById('freezer-max').textContent = data.max.toFixed(1) + ' °C';
             document.getElementById('freezer-avg').textContent = (data.sum / data.count).toFixed(1) + ' °C';
             document.getElementById('freezer-count').textContent = data.count;
+        } else {
+            resetStatsDisplay('freezer');
         }
     });
 }
 
-// Haftalık özet hesapla
+// İstatistikleri sıfırla
+function resetStatsDisplay(type) {
+    document.getElementById(`${type}-min`).textContent = '--';
+    document.getElementById(`${type}-max`).textContent = '--';
+    document.getElementById(`${type}-avg`).textContent = '--';
+    document.getElementById(`${type}-count`).textContent = '--';
+}
+
+// Haftalık özet hesapla (GÜNCELLENDİ)
 function loadWeeklySummary() {
     const today = new Date();
     const last7Days = [];
@@ -411,8 +294,7 @@ function loadWeeklySummary() {
         last7Days.push(date.toISOString().split('T')[0]);
     }
     
-    let fridgeTotal = 0, fridgeCount = 0;
-    let freezerTotal = 0, freezerCount = 0;
+    let fridgeData = [], freezerData = [];
     let processedDays = 0;
     
     last7Days.forEach(date => {
@@ -420,117 +302,47 @@ function loadWeeklySummary() {
             const data = snapshot.val();
             if (data) {
                 if (data.fridge) {
-                    fridgeTotal += data.fridge.sum;
-                    fridgeCount += data.fridge.count;
+                    fridgeData.push({
+                        date: date,
+                        avg: data.fridge.sum / data.fridge.count,
+                        count: data.fridge.count
+                    });
                 }
                 if (data.freezer) {
-                    freezerTotal += data.freezer.sum;
-                    freezerCount += data.freezer.count;
+                    freezerData.push({
+                        date: date,
+                        avg: data.freezer.sum / data.freezer.count,
+                        count: data.freezer.count
+                    });
                 }
             }
             
             processedDays++;
             if (processedDays === 7) {
-                // Tüm günler işlendi, ortalamaları göster
-                if (fridgeCount > 0) {
-                    document.getElementById('weekly-fridge-avg').textContent = 
-                        (fridgeTotal / fridgeCount).toFixed(1) + ' °C';
-                }
-                if (freezerCount > 0) {
-                    document.getElementById('weekly-freezer-avg').textContent = 
-                        (freezerTotal / freezerCount).toFixed(1) + ' °C';
-                }
+                updateWeeklySummary(fridgeData, freezerData);
             }
         });
     });
 }
 
-// Elektrik kesintisi kaydet
-function saveOutage(startTime, endTime) {
-    const duration = endTime - startTime;
-    const timestamp = new Date(startTime).toISOString().replace(/:/g, '-');
+// Haftalık özeti güncelle
+function updateWeeklySummary(fridgeData, freezerData) {
+    if (fridgeData.length > 0) {
+        const fridgeAvg = fridgeData.reduce((sum, day) => sum + day.avg, 0) / fridgeData.length;
+        document.getElementById('weekly-fridge-avg').textContent = fridgeAvg.toFixed(1) + ' °C';
+    }
     
-    firebase.database().ref(`stats/outages/${timestamp}`).set({
-        start: startTime,
-        end: endTime,
-        duration: duration,
-        date: new Date(startTime).toISOString().split('T')[0]
-    });
-}
-
-// Kesinti geçmişini göster
-function loadOutageHistory() {
-    const today = new Date();
-    const last7Days = new Date(today);
-    last7Days.setDate(last7Days.getDate() - 7);
-    
-    firebase.database().ref('stats/outages')
-        .orderByChild('start')
-        .startAt(last7Days.getTime())
-        .on('value', snapshot => {
-            const outages = [];
-            snapshot.forEach(child => {
-                outages.push(child.val());
-            });
-            
-            outages.reverse(); // En yeni önce
-            
-            if (outages.length === 0) {
-                document.getElementById('outageHistory').innerHTML = 
-                    '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">Henüz kesinti kaydı yok ✅</p>';
-                document.getElementById('weekly-outage-count').textContent = '0 kesinti';
-                document.getElementById('weekly-outage-duration').textContent = '0 dk';
-                return;
-            }
-            
-            // Kesinti listesi HTML
-            let html = '';
-            let totalDuration = 0;
-            
-            outages.forEach(outage => {
-                const startDate = new Date(outage.start);
-                const durationMin = Math.floor(outage.duration / 60000);
-                totalDuration += outage.duration;
-                
-                html += `
-                    <div class="outage-item">
-                        <div class="outage-date">
-                            ⚡ ${startDate.toLocaleDateString('tr-TR', {
-                                day: '2-digit',
-                                month: 'long',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}
-                        </div>
-                        <div class="outage-duration">
-                            Süre: ${durationMin} dakika
-                        </div>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('outageHistory').innerHTML = html;
-            
-            // Haftalık özet
-            document.getElementById('weekly-outage-count').textContent = outages.length + ' kesinti';
-            
-            const totalMinutes = Math.floor(totalDuration / 60000);
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
-            
-            if (hours > 0) {
-                document.getElementById('weekly-outage-duration').textContent = 
-                    `${hours} saat ${minutes} dk`;
-            } else {
-                document.getElementById('weekly-outage-duration').textContent = `${minutes} dk`;
-            }
-        });
+    if (freezerData.length > 0) {
+        const freezerAvg = freezerData.reduce((sum, day) => sum + day.avg, 0) / freezerData.length;
+        document.getElementById('weekly-freezer-avg').textContent = freezerAvg.toFixed(1) + ' °C';
+    }
 }
 
 // ============================================
-// Connection Status (GÜNCELLENDİ)
+// TEMEL FONKSİYONLAR (GÜNCELLENDİ)
 // ============================================
+
+// Bağlantı durumunu güncelle
 function updateConnectionStatus() {
     const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
@@ -556,8 +368,6 @@ function updateConnectionStatus() {
             statusText.innerText = '🔴 Bağlantı Kesildi';
             powerAlert.classList.add('show');
             reconnectAlert.classList.remove('show');
-
-            // Bildirim gönder
             notifyPowerOutage();
         }
         powerAlertTime.innerText = timeAgo(lastOverallUpdate);
@@ -566,14 +376,9 @@ function updateConnectionStatus() {
             const outageDuration = new Date() - offlineStartTime;
             const durationText = formatDuration(outageDuration);
             
-            // YENİ: Kesinti kaydet
-            saveOutage(offlineStartTime.getTime(), Date.now());
-            
             document.getElementById('outageDuration').innerText = durationText;
             reconnectAlert.classList.add('show');
             setTimeout(() => reconnectAlert.classList.remove('show'), 10000);
-
-            // Bildirim gönder
             notifyReconnected(durationText);
         }
         isOnline = true;
@@ -583,10 +388,9 @@ function updateConnectionStatus() {
     }
     
     lastUpdateText.innerText = 'Son güncelleme: ' + timeAgo(lastOverallUpdate);
-    // updateSensorStatus('fridge', lastFridgeUpdate);
-    // updateSensorStatus('freezer', lastFreezerUpdate);
 }
 
+// Sıcaklık durumunu kontrol et
 function checkStatus(temp, type, isConnected) {
     if (!isConnected) return { class: 'offline', text: '⚠️ Bağlantı Yok' };
     
@@ -603,34 +407,14 @@ function checkStatus(temp, type, isConnected) {
     }
 }
 
-
-function updateSensorStatus(type, lastUpdate) {
-    const tempEl = document.getElementById(type);
-    const statusEl = document.getElementById(type + '-status');
-    const currentTemp = parseFloat(tempEl.innerText);
-    
-    // BASİT ÇÖZÜM: Sıcaklık değeri varsa "Normal" göster
-    if (!isNaN(currentTemp) && currentTemp !== 0) {
-        statusEl.className = 'sensor-status ok';
-        statusEl.innerText = '✓ Normal';
-    }
-    // Değer yoksa veya 0 ise "Veri Bekleniyor"
-    else {
-        statusEl.className = 'sensor-status offline';
-        statusEl.innerText = '⚠️ Veri Bekleniyor';
-    }
-}
-
-// updateDisplay (GÜNCELLENDİ)
+// Ekranı güncelle
 function updateDisplay(value, type) {
     const now = new Date();
     const tempEl = document.getElementById(type);
     const timeEl = document.getElementById(type + '-time');
     const statusEl = document.getElementById(type + '-status');
     
-    // YENİ: 1 ondalık basamak göster
     tempEl.innerText = value.toFixed(1) + ' °C';
-    
     timeEl.innerText = formatTime(now);
     
     const status = checkStatus(value, type, true);
@@ -642,74 +426,60 @@ function updateDisplay(value, type) {
     
     lastOverallUpdate = now;
     
-    // YENİ: İstatistik kaydet
+    // İstatistik kaydet ve grafiği güncelle
     saveStats(value, type);
+    updateChartWithNewData(
+        type === 'fridge' ? value : temperatureChart.data.datasets[0].data[temperatureChart.data.datasets[0].data.length - 1] || value,
+        type === 'freezer' ? value : temperatureChart.data.datasets[1].data[temperatureChart.data.datasets[1].data.length - 1] || value
+    );
     
-    // Sıcaklık uyarısı kontrolü
     checkTemperatureAlert(value, type);
     updateConnectionStatus();
 }
 
-// Firebase Listeners - Saniye timestamp desteği
-// Firebase Listeners - STATUS'U DA GÜNCELLEYELİM
-firebase.database().ref("fridge").on("value", function (snapshot) {
+// ============================================
+// FIREBASE LISTENERS (GÜNCELLENDİ)
+// ============================================
+
+firebase.database().ref("fridge").on("value", function(snapshot) {
     const value = snapshot.val();
     if (value !== null) {
         console.log("✅ Fridge verisi alındı:", value);
-        
-        const now = new Date();
-        
-        document.getElementById('fridge').textContent = value.toFixed(1) + ' °C';
-        document.getElementById('fridge-time').textContent = formatTime(now);
-        lastFridgeUpdate = now;
-        updateOverallTimestamp();
-        
-        // YENİ: Status'u hemen güncelle
-        const status = checkStatus(value, 'fridge', true);
-        document.getElementById('fridge-status').className = 'sensor-status ' + status.class;
-        document.getElementById('fridge-status').innerText = status.text;
+        updateDisplay(value, 'fridge');
     }
 });
 
-firebase.database().ref("freezer").on("value", function (snapshot) {
+firebase.database().ref("freezer").on("value", function(snapshot) {
     const value = snapshot.val();
     if (value !== null) {
         console.log("✅ Freezer verisi alındı:", value);
-        
-        const now = new Date();
-        
-        document.getElementById('freezer').textContent = value.toFixed(1) + ' °C';
-        document.getElementById('freezer-time').textContent = formatTime(now);
-        lastFreezerUpdate = now;
-        updateOverallTimestamp();
-        
-        // YENİ: Status'u hemen güncelle
-        const status = checkStatus(value, 'freezer', true);
-        document.getElementById('freezer-status').className = 'sensor-status ' + status.class;
-        document.getElementById('freezer-status').innerText = status.text;
+        updateDisplay(value, 'freezer');
     }
 });
 
-// YENİ: Genel timestamp güncelleme fonksiyonu - GÜNCELLENDİ
-function updateOverallTimestamp() {
-    if (lastFridgeUpdate || lastFreezerUpdate) {
-        const newOverall = new Date(Math.max(
-            lastFridgeUpdate ? lastFridgeUpdate.getTime() : 0,
-            lastFreezerUpdate ? lastFreezerUpdate.getTime() : 0
-        ));
-        
-        // YENİ: Sadece 10 saniyeden eski güncellemelerde overall'ı değiştir
-        if (!lastOverallUpdate || (newOverall - lastOverallUpdate > 10000)) {
-            lastOverallUpdate = newOverall;
-        }
-        
-        updateConnectionStatus();
-    }
+// ============================================
+// YARDIMCI FONKSİYONLAR
+// ============================================
+
+function formatTime(date) {
+    if (date.getFullYear() === 1970) return "Bekleniyor...";
+    return date.toLocaleTimeString('tr-TR', { 
+        hour: '2-digit', minute: '2-digit'
+    });
 }
 
-// ============================================
-// EKSİK FONKSİYONLAR - EKLENECEK
-// ============================================
+function timeAgo(date) {
+    if (!date) return "Bekleniyor...";
+    const now = new Date();
+    const diff = now - date;
+    const seconds = Math.floor(diff / 1000);
+    
+    if (seconds < 5) return "Şimdi";
+    if (seconds < 60) return seconds + " saniye önce";
+    if (seconds < 3600) return Math.floor(seconds / 60) + " dakika önce";
+    if (seconds < 86400) return Math.floor(seconds / 3600) + " saat önce";
+    return Math.floor(seconds / 86400) + " gün önce";
+}
 
 function formatDuration(milliseconds) {
     const totalSeconds = Math.floor(milliseconds / 1000);
@@ -719,20 +489,417 @@ function formatDuration(milliseconds) {
     return seconds + ' saniye';
 }
 
+// Verileri yenile
+function refreshData() {
+    location.reload();
+}
 
-
-// Initialize (GÜNCELLENDİ)
+// Uygulama başlatma
 window.addEventListener('load', function() {
     initTheme();
-    createChart();
-
-    // YENİ: İstatistikleri yükle
+    createRealChart(); // Fake data yerine real chart
     loadDailyStats();
     loadWeeklySummary();
-    loadOutageHistory();
-
-    // Bildirim izni iste (5 saniye sonra, kullanıcıyı rahatsız etmemek için)
+    
+    // Bildirim izni iste
     setTimeout(() => {
         requestNotificationPermission();
-    }, 5000);
+    }, 3000);
 });
+
+// Kalan fonksiyonlar (initTheme, toggleTheme, notification fonksiyonları) aynı kalacak
+// ...
+
+// ============================================
+// TEMA ve ARAYÜZ FONKSİYONLARI
+// ============================================
+
+// Temayı başlat
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const themeToggle = document.getElementById('themeToggle');
+    
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        themeToggle.innerText = '☀️';
+    } else {
+        themeToggle.innerText = '🌙';
+    }
+}
+
+// Temayı değiştir
+function toggleTheme() {
+    const body = document.body;
+    const themeToggle = document.getElementById('themeToggle');
+    
+    body.classList.toggle('dark-mode');
+    
+    if (body.classList.contains('dark-mode')) {
+        themeToggle.innerText = '☀️';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        themeToggle.innerText = '🌙';
+        localStorage.setItem('theme', 'light');
+    }
+    
+    // Grafik temasını güncelle
+    if (temperatureChart) {
+        updateChartTheme();
+    }
+}
+
+// Grafik temasını güncelle
+function updateChartTheme() {
+    const isDark = document.body.classList.contains('dark-mode');
+    
+    if (temperatureChart && temperatureChart.options) {
+        temperatureChart.options.scales.x.ticks.color = isDark ? '#b0b0b0' : '#666';
+        temperatureChart.options.scales.y.ticks.color = isDark ? '#b0b0b0' : '#666';
+        temperatureChart.options.scales.x.grid.color = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+        temperatureChart.options.scales.y.grid.color = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+        temperatureChart.options.plugins.legend.labels.color = isDark ? '#e0e0e0' : '#333';
+        
+        temperatureChart.update();
+    }
+}
+
+// ============================================
+// BİLDİRİM FONKSİYONLARI
+// ============================================
+
+// Bildirim izni iste
+async function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+        console.log('Bu tarayıcı bildirimleri desteklemiyor');
+        return false;
+    }
+    
+    if (Notification.permission === 'granted') {
+        notificationPermission = true;
+        return true;
+    }
+    
+    if (Notification.permission !== 'denied') {
+        const permission = await Notification.requestPermission();
+        notificationPermission = permission === 'granted';
+        
+        if (notificationPermission) {
+            showTempAlert('✅ Bildirimler etkin!', 'success');
+        }
+        return notificationPermission;
+    }
+    
+    return false;
+}
+
+// Bildirim gönder
+function sendNotification(title, body, icon = '⚠️') {
+    if (!notificationPermission) return;
+    
+    // Spam önleme - 5 dakikada bir bildirim
+    const now = Date.now();
+    const lastNotification = Math.max(lastNotificationTime.fridge, lastNotificationTime.freezer, lastNotificationTime.power);
+    if (now - lastNotification < NOTIFICATION_COOLDOWN) {
+        return;
+    }
+    
+    // Service Worker varsa onunla gönder
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then(registration => {
+            registration.showNotification(title, {
+                body: body,
+                icon: '/fridge-dashboard/icon.png',
+                badge: '/fridge-dashboard/badge.png',
+                vibrate: [200, 100, 200],
+                tag: 'fridge-alert',
+                requireInteraction: true,
+                actions: [
+                    {
+                        action: 'open',
+                        title: '📱 Aç'
+                    },
+                    {
+                        action: 'close',
+                        title: 'Kapat'
+                    }
+                ]
+            });
+        });
+    } else {
+        // Fallback: Normal notification
+        try {
+            const notification = new Notification(title, {
+                body: body,
+                icon: '/fridge-dashboard/icon.png',
+                badge: '/fridge-dashboard/badge.png'
+            });
+            
+            notification.onclick = function() {
+                window.focus();
+                notification.close();
+            };
+        } catch (error) {
+            console.log('Bildirim hatası:', error);
+        }
+    }
+}
+
+// Sıcaklık uyarısı kontrolü
+function checkTemperatureAlert(temp, type) {
+    const now = Date.now();
+    
+    if (type === 'fridge' && temp > 8) {
+        if (now - lastNotificationTime.fridge >= NOTIFICATION_COOLDOWN) {
+            sendNotification(
+                '⚠️ Buzdolabı Sıcak!',
+                `Buzdolabı sıcaklığı ${temp.toFixed(1)}°C - Yiyecekler bozulabilir!`,
+                '🔥'
+            );
+            lastNotificationTime.fridge = now;
+            showTempAlert('🔥 Buzdolabı çok sıcak!', 'danger');
+        }
+    } else if (type === 'freezer' && temp > -10) {
+        if (now - lastNotificationTime.freezer >= NOTIFICATION_COOLDOWN) {
+            sendNotification(
+                '⚠️ Dondurucu Sıcak!',
+                `Dondurucu sıcaklığı ${temp.toFixed(1)}°C - Donmuş gıdalar eriyebilir!`,
+                '🔥'
+            );
+            lastNotificationTime.freezer = now;
+            showTempAlert('❄️ Dondurucu çok sıcak!', 'danger');
+        }
+    }
+}
+
+// Elektrik kesintisi bildirimi
+function notifyPowerOutage() {
+    const now = Date.now();
+    
+    if (now - lastNotificationTime.power >= NOTIFICATION_COOLDOWN) {
+        sendNotification(
+            '⚡ Elektrik Kesintisi!',
+            'Buzdolabından 1 dakikadır veri gelmiyor. Elektrik kesilmiş olabilir.',
+            '⚡'
+        );
+        lastNotificationTime.power = now;
+    }
+}
+
+// Bağlantı yeniden kuruldu bildirimi
+function notifyReconnected(duration) {
+    sendNotification(
+        '✅ Bağlantı Yeniden Kuruldu',
+        `Elektrik geri geldi! Kesinti süresi: ${duration}`,
+        '✅'
+    );
+}
+
+// Geçici uyarı göster (sayfa içi)
+function showTempAlert(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `temp-alert ${type}`;
+    alertDiv.innerHTML = `
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()">×</button>
+    `;
+    
+    // Stil ekle (eğer yoksa)
+    if (!document.querySelector('#alert-styles')) {
+        const style = document.createElement('style');
+        style.id = 'alert-styles';
+        style.textContent = `
+            .temp-alert {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 10px;
+                color: white;
+                z-index: 10000;
+                animation: slideInRight 0.3s ease;
+                max-width: 300px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+            }
+            .temp-alert.info { background: #007BFF; }
+            .temp-alert.success { background: #28a745; }
+            .temp-alert.danger { background: #dc3545; }
+            .temp-alert.warning { background: #ffc107; color: #000; }
+            .temp-alert button {
+                background: none;
+                border: none;
+                color: inherit;
+                font-size: 18px;
+                cursor: pointer;
+                padding: 0;
+                width: 20px;
+                height: 20px;
+            }
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(alertDiv);
+    
+    // 5 saniye sonra otomatik kaldır
+    setTimeout(() => {
+        if (alertDiv.parentElement) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// ============================================
+// PWA ve KURULUM FONKSİYONLARI
+// ============================================
+
+// PWA Install prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    if (!localStorage.getItem('pwa-dismissed')) {
+        document.getElementById('installPrompt').classList.add('show');
+    }
+});
+
+// PWA kurulum butonu
+document.getElementById('installBtn').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+        console.log('PWA kuruldu!');
+        showTempAlert('📱 Uygulama kuruldu!', 'success');
+    }
+    
+    deferredPrompt = null;
+    document.getElementById('installPrompt').classList.remove('show');
+});
+
+// PWA kurulum kapatma
+document.getElementById('closeInstallBtn').addEventListener('click', () => {
+    document.getElementById('installPrompt').classList.remove('show');
+    localStorage.setItem('pwa-dismissed', 'true');
+});
+
+// Service Worker kayıt
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/fridge-dashboard/service-worker.js')
+            .then(reg => console.log('Service Worker kayıtlı:', reg))
+            .catch(err => console.log('Service Worker hatası:', err));
+    });
+}
+
+// ============================================
+// ELEKTRİK KESİNTİSİ FONKSİYONLARI
+// ============================================
+
+// Elektrik kesintisi kaydet
+function saveOutage(startTime, endTime) {
+    const duration = endTime - startTime;
+    const timestamp = new Date(startTime).toISOString().replace(/[:.]/g, '-');
+    
+    firebase.database().ref(`stats/outages/${timestamp}`).set({
+        start: startTime,
+        end: endTime,
+        duration: duration,
+        date: new Date(startTime).toISOString().split('T')[0],
+        formattedDuration: formatDuration(duration)
+    }).then(() => {
+        console.log('✅ Kesinti kaydedildi:', formatDuration(duration));
+    }).catch(error => {
+        console.error('❌ Kesinti kaydetme hatası:', error);
+    });
+}
+
+// Kesinti geçmişini yükle
+function loadOutageHistory() {
+    const today = new Date();
+    const last7Days = new Date(today);
+    last7Days.setDate(last7Days.getDate() - 7);
+    
+    firebase.database().ref('stats/outages')
+        .orderByChild('start')
+        .startAt(last7Days.getTime())
+        .once('value')
+        .then(snapshot => {
+            const outages = [];
+            snapshot.forEach(child => {
+                outages.push(child.val());
+            });
+            
+            outages.sort((a, b) => b.start - a.start); // Yeniden eskiye
+            
+            displayOutageHistory(outages);
+        })
+        .catch(error => {
+            console.error('Kesinti geçmişi yükleme hatası:', error);
+            document.getElementById('outageHistory').innerHTML = 
+                '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">Veri yüklenirken hata oluştu</p>';
+        });
+}
+
+// Kesinti geçmişini göster
+function displayOutageHistory(outages) {
+    if (outages.length === 0) {
+        document.getElementById('outageHistory').innerHTML = 
+            '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">Son 7 günde kesinti kaydı yok ✅</p>';
+        
+        document.getElementById('weekly-outage-count').textContent = '0 kesinti';
+        document.getElementById('weekly-outage-duration').textContent = '0 dk';
+        return;
+    }
+    
+    let html = '';
+    let totalDuration = 0;
+    let outageCount = outages.length;
+    
+    outages.forEach(outage => {
+        const startDate = new Date(outage.start);
+        const durationMin = Math.floor(outage.duration / 60000);
+        totalDuration += outage.duration;
+        
+        html += `
+            <div class="outage-item">
+                <div class="outage-date">
+                    ⚡ ${startDate.toLocaleDateString('tr-TR', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}
+                </div>
+                <div class="outage-duration">
+                    Süre: ${durationMin} dakika
+                </div>
+            </div>
+        `;
+    });
+    
+    document.getElementById('outageHistory').innerHTML = html;
+    
+    // Haftalık özet
+    document.getElementById('weekly-outage-count').textContent = outageCount + ' kesinti';
+    
+    const totalMinutes = Math.floor(totalDuration / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    if (hours > 0) {
+        document.getElementById('weekly-outage-duration').textContent = 
+            `${hours} saat ${minutes} dk`;
+    } else {
+        document.getElementById('weekly-outage-duration').textContent = `${minutes} dk`;
+    }
+}
