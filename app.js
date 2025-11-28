@@ -633,22 +633,26 @@ function updateDisplay(value, type) {
     updateConnectionStatus();
 }
 
-// Firebase Listeners - GÜNCELLENDİ
+// Firebase Listeners - DEBUG'lı versiyon
 firebase.database().ref("fridge").on("value", function (snapshot) {
     const value = snapshot.val();
     if (value !== null) {
         console.log("✅ Fridge verisi alındı:", value);
         updateDisplay(value, 'fridge');
         
-        // Timestamp'i al ve güncelle
+        // Timestamp debug
         firebase.database().ref("fridgeLastUpdate").once("value").then(timeSnapshot => {
             const timestamp = timeSnapshot.val();
+            console.log("🕒 Fridge Timestamp:", timestamp);
             if (timestamp) {
-                // YENİ: Saniyeyi milisaniyeye çevir
-                const updateTime = new Date(parseInt(timestamp) * 1000);
+                const updateTime = new Date(parseInt(timestamp));
+                console.log("🕒 Fridge Tarih:", updateTime);
                 document.getElementById('fridge-time').textContent = formatTime(updateTime);
                 lastFridgeUpdate = updateTime;
                 updateOverallTimestamp();
+            } else {
+                console.log("❌ Fridge timestamp yok!");
+                document.getElementById('fridge-time').textContent = "Bekleniyor...";
             }
         });
     }
@@ -660,15 +664,19 @@ firebase.database().ref("freezer").on("value", function (snapshot) {
         console.log("✅ Freezer verisi alındı:", value);
         updateDisplay(value, 'freezer');
         
-        // Timestamp'i al ve güncelle
+        // Timestamp debug
         firebase.database().ref("freezerLastUpdate").once("value").then(timeSnapshot => {
             const timestamp = timeSnapshot.val();
+            console.log("🕒 Freezer Timestamp:", timestamp);
             if (timestamp) {
-                // YENİ: Saniyeyi milisaniyeye çevir
-                const updateTime = new Date(parseInt(timestamp) * 1000);
+                const updateTime = new Date(parseInt(timestamp));
+                console.log("🕒 Freezer Tarih:", updateTime);
                 document.getElementById('freezer-time').textContent = formatTime(updateTime);
                 lastFreezerUpdate = updateTime;
                 updateOverallTimestamp();
+            } else {
+                console.log("❌ Freezer timestamp yok!");
+                document.getElementById('freezer-time').textContent = "Bekleniyor...";
             }
         });
     }
