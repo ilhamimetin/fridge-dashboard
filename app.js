@@ -300,8 +300,12 @@ function createChart() {
     });
 }
 
-// Helper Functions
+// Helper Functions - GÜNCELLENDİ
 function formatTime(date) {
+    // Eğer tarih 1970 ise "Bekleniyor..." göster
+    if (date.getFullYear() === 1970) {
+        return "Bekleniyor...";
+    }
     return date.toLocaleTimeString('tr-TR', { 
         hour: '2-digit', minute: '2-digit', second: '2-digit'
     }) + ' - ' + date.toLocaleDateString('tr-TR', {
@@ -629,24 +633,22 @@ function updateDisplay(value, type) {
     updateConnectionStatus();
 }
 
-// Firebase Listeners - TIMESTAMP'li versiyon
+// Firebase Listeners - GÜNCELLENDİ
 firebase.database().ref("fridge").on("value", function (snapshot) {
     const value = snapshot.val();
     if (value !== null) {
         console.log("✅ Fridge verisi alındı:", value);
         updateDisplay(value, 'fridge');
         
-        // Timestamp'i de güncelle
+        // Timestamp'i al ve güncelle
         firebase.database().ref("fridgeLastUpdate").once("value").then(timeSnapshot => {
             const timestamp = timeSnapshot.val();
             if (timestamp) {
-                const updateTime = new Date(parseInt(timestamp));
+                // YENİ: Saniyeyi milisaniyeye çevir
+                const updateTime = new Date(parseInt(timestamp) * 1000);
                 document.getElementById('fridge-time').textContent = formatTime(updateTime);
                 lastFridgeUpdate = updateTime;
-                lastOverallUpdate = new Date(Math.max(
-                    lastFridgeUpdate ? lastFridgeUpdate.getTime() : 0,
-                    lastFreezerUpdate ? lastFreezerUpdate.getTime() : 0
-                ));
+                updateOverallTimestamp();
             }
         });
     }
@@ -658,21 +660,29 @@ firebase.database().ref("freezer").on("value", function (snapshot) {
         console.log("✅ Freezer verisi alındı:", value);
         updateDisplay(value, 'freezer');
         
-        // Timestamp'i de güncelle
+        // Timestamp'i al ve güncelle
         firebase.database().ref("freezerLastUpdate").once("value").then(timeSnapshot => {
             const timestamp = timeSnapshot.val();
             if (timestamp) {
-                const updateTime = new Date(parseInt(timestamp));
+                // YENİ: Saniyeyi milisaniyeye çevir
+                const updateTime = new Date(parseInt(timestamp) * 1000);
                 document.getElementById('freezer-time').textContent = formatTime(updateTime);
                 lastFreezerUpdate = updateTime;
-                lastOverallUpdate = new Date(Math.max(
-                    lastFridgeUpdate ? lastFridgeUpdate.getTime() : 0,
-                    lastFreezerUpdate ? lastFreezerUpdate.getTime() : 0
-                ));
+                updateOverallTimestamp();
             }
         });
     }
 });
+
+// YENİ: Genel timestamp güncelleme fonksiyonu
+function updateOverallTimestamp() {
+    if (lastFridgeUpdate || lastFreezerUpdate) {
+        lastOverallUpdate = new Date(Math.max(
+            lastFridgeUpdate ? lastFridgeUpdate.getTime() : 0,
+            lastFreezerUpdate ? lastFreezerUpdate.getTime() : 0
+        ));
+    }
+}
 
 // Initialize (GÜNCELLENDİ)
 window.addEventListener('load', function() {
