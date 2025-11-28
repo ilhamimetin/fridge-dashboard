@@ -627,26 +627,21 @@ function updateDisplay(value, type) {
     updateConnectionStatus();
 }
 
-//// Firebase Listeners
-//firebase.database().ref("fridge").on("value", function (snapshot) {
-//    const value = snapshot.val();
-//    if (value !== null) updateDisplay(value, 'fridge');
-//});
-
-//firebase.database().ref("freezer").on("value", function (snapshot) {
-//    const value = snapshot.val();
-//    if (value !== null) updateDisplay(value, 'freezer');
-// });
-
-// Firebase Listeners - YENİ YOL
-firebase.database().ref("locations/buzdolabi/normal").on("value", function (snapshot) {
+// Firebase Listeners - DOĞRU PATH'LER
+firebase.database().ref("fridge").on("value", function (snapshot) {
     const value = snapshot.val();
-    if (value !== null) updateDisplay(value, 'fridge');
+    if (value !== null) {
+        console.log("✅ Fridge verisi alındı:", value);
+        updateDisplay(value, 'fridge');
+    }
 });
 
-firebase.database().ref("locations/buzdolabi/dondurucu").on("value", function (snapshot) {
+firebase.database().ref("freezer").on("value", function (snapshot) {
     const value = snapshot.val();
-    if (value !== null) updateDisplay(value, 'freezer');
+    if (value !== null) {
+        console.log("✅ Freezer verisi alındı:", value);
+        updateDisplay(value, 'freezer');
+    }
 });
 
 checkInterval = setInterval(updateConnectionStatus, 5000);
