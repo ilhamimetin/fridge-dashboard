@@ -314,45 +314,32 @@ function formatTime(date) {
 }
 
 function timeAgo(date) {
-    if (!date || date.getFullYear() === 1970) {
+    if (!date) {
         return "Bekleniyor...";
     }
     
     const now = new Date();
     const diff = now - date; // Milisaniye farkı
     
-    // Eğer tarih gelecekteyse
     if (diff < 0) {
         return "Zaman senkron hatası!";
     }
     
     const seconds = Math.floor(diff / 1000);
-    if (seconds < 60) return seconds + ' saniye önce';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return minutes + ' dakika önce';
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return hours + ' saat önce';
-    const days = Math.floor(hours / 24);
-    return days + ' gün önce';
-}
-function formatDuration(milliseconds) {
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    if (minutes > 0) return minutes + ' dakika ' + seconds + ' saniye';
-    return seconds + ' saniye';
-}
-
-function checkStatus(temp, type, isConnected) {
-    if (!isConnected) return { class: 'offline', text: '⚠️ Bağlantı Yok' };
-    if (type === 'fridge') {
-        if (temp > 8) return { class: 'danger', text: '🔥 Çok Sıcak!' };
-        if (temp > 6) return { class: 'warning', text: '⚡ Dikkat' };
-        return { class: 'ok', text: '✓ Normal' };
+    
+    if (seconds < 5) {
+        return "Şimdi"; // "0 saniye önce" yerine "Şimdi"
+    } else if (seconds < 60) {
+        return seconds + " saniye önce";
+    } else if (seconds < 3600) {
+        const minutes = Math.floor(seconds / 60);
+        return minutes + " dakika önce";
+    } else if (seconds < 86400) {
+        const hours = Math.floor(seconds / 3600);
+        return hours + " saat önce";
     } else {
-        if (temp > -10) return { class: 'danger', text: '🔥 Çok Sıcak!' };
-        if (temp > -15) return { class: 'warning', text: '⚡ Dikkat' };
-        return { class: 'ok', text: '✓ Normal' };
+        const days = Math.floor(seconds / 86400);
+        return days + " gün önce";
     }
 }
 
