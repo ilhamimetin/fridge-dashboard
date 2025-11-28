@@ -587,18 +587,21 @@ function updateConnectionStatus() {
     updateSensorStatus('freezer', lastFreezerUpdate);
 }
 
+
 function updateSensorStatus(type, lastUpdate) {
-    if (!lastUpdate) return;
-    const timeSinceUpdate = new Date() - lastUpdate;
-    const secondsSinceUpdate = Math.floor(timeSinceUpdate / 1000);
-    const isConnected = secondsSinceUpdate <= 60;
     const tempEl = document.getElementById(type);
     const statusEl = document.getElementById(type + '-status');
     const currentTemp = parseFloat(tempEl.innerText);
-    if (!isNaN(currentTemp)) {
-        const status = checkStatus(currentTemp, type, isConnected);
-        statusEl.className = 'sensor-status ' + status.class;
-        statusEl.innerText = status.text;
+    
+    // BASİT ÇÖZÜM: Sıcaklık değeri varsa "Normal" göster
+    if (!isNaN(currentTemp) && currentTemp !== 0) {
+        statusEl.className = 'sensor-status ok';
+        statusEl.innerText = '✓ Normal';
+    }
+    // Değer yoksa veya 0 ise "Veri Bekleniyor"
+    else {
+        statusEl.className = 'sensor-status offline';
+        statusEl.innerText = '⚠️ Veri Bekleniyor';
     }
 }
 
