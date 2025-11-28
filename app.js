@@ -314,7 +314,19 @@ function formatTime(date) {
 }
 
 function timeAgo(date) {
-    const seconds = Math.floor((new Date() - date) / 1000);
+    if (!date || date.getFullYear() === 1970) {
+        return "Bekleniyor...";
+    }
+    
+    const now = new Date();
+    const diff = now - date; // Milisaniye farkı
+    
+    // Eğer tarih gelecekteyse
+    if (diff < 0) {
+        return "Zaman senkron hatası!";
+    }
+    
+    const seconds = Math.floor(diff / 1000);
     if (seconds < 60) return seconds + ' saniye önce';
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return minutes + ' dakika önce';
@@ -323,7 +335,6 @@ function timeAgo(date) {
     const days = Math.floor(hours / 24);
     return days + ' gün önce';
 }
-
 function formatDuration(milliseconds) {
     const totalSeconds = Math.floor(milliseconds / 1000);
     const minutes = Math.floor(totalSeconds / 60);
