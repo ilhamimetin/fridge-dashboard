@@ -672,12 +672,17 @@ firebase.database().ref("freezer").on("value", function (snapshot) {
 // YENİ: Genel timestamp güncelleme fonksiyonu - GÜNCELLENDİ
 function updateOverallTimestamp() {
     if (lastFridgeUpdate || lastFreezerUpdate) {
-        lastOverallUpdate = new Date(Math.max(
+        // Sadece gerçek sensör güncellemelerinde overall'ı güncelle
+        const newOverall = new Date(Math.max(
             lastFridgeUpdate ? lastFridgeUpdate.getTime() : 0,
             lastFreezerUpdate ? lastFreezerUpdate.getTime() : 0
         ));
         
-        // YENİ: Connection status'u hemen güncelle
+        // Eğer yeni güncelleme eski olandan daha yeni ise güncelle
+        if (!lastOverallUpdate || newOverall > lastOverallUpdate) {
+            lastOverallUpdate = newOverall;
+        }
+        
         updateConnectionStatus();
         console.log("🔄 Connection status güncellendi");
     }
