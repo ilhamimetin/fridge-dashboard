@@ -627,12 +627,26 @@ function updateDisplay(value, type) {
     updateConnectionStatus();
 }
 
-// Firebase Listeners - DOĞRU PATH'LER
+// Firebase Listeners - TIMESTAMP'li versiyon
 firebase.database().ref("fridge").on("value", function (snapshot) {
     const value = snapshot.val();
     if (value !== null) {
         console.log("✅ Fridge verisi alındı:", value);
         updateDisplay(value, 'fridge');
+        
+        // Timestamp'i de güncelle
+        firebase.database().ref("fridgeLastUpdate").once("value").then(timeSnapshot => {
+            const timestamp = timeSnapshot.val();
+            if (timestamp) {
+                const updateTime = new Date(parseInt(timestamp));
+                document.getElementById('fridge-time').textContent = formatTime(updateTime);
+                lastFridgeUpdate = updateTime;
+                lastOverallUpdate = new Date(Math.max(
+                    lastFridgeUpdate ? lastFridgeUpdate.getTime() : 0,
+                    lastFreezerUpdate ? lastFreezerUpdate.getTime() : 0
+                ));
+            }
+        });
     }
 });
 
@@ -641,34 +655,22 @@ firebase.database().ref("freezer").on("value", function (snapshot) {
     if (value !== null) {
         console.log("✅ Freezer verisi alındı:", value);
         updateDisplay(value, 'freezer');
+        
+        // Timestamp'i de güncelle
+        firebase.database().ref("freezerLastUpdate").once("value").then(timeSnapshot => {
+            const timestamp = timeSnapshot.val();
+            if (timestamp) {
+                const updateTime = new Date(parseInt(timestamp));
+                document.getElementById('freezer-time').textContent = formatTime(updateTime);
+                lastFreezerUpdate = updateTime;
+                lastOverallUpdate = new Date(Math.max(
+                    lastFridgeUpdate ? lastFridgeUpdate.getTime() : 0,
+                    lastFreezerUpdate ? lastFreezerUpdate.getTime() : 0
+                ));
+            }
+        });
     }
 });
-
-checkInterval = setInterval(updateConnectionStatus, 5000);
-
-// Refresh Button
-function refreshData() {
-    const btn = document.querySelector('.refresh-btn');
-    btn.innerText = '⏳ Yenileniyor...';
-    btn.disabled = true;
-
-    firebase.database().ref("fridge").once("value").then(function(snapshot) {
-        const value = snapshot.val();
-        if (value !== null) updateDisplay(value, 'fridge');
-    });
-
-    firebase.database().ref("freezer").once("value").then(function(snapshot) {
-        const value = snapshot.val();
-        if (value !== null) updateDisplay(value, 'freezer');
-        setTimeout(() => {
-            btn.innerText = '✓ Güncellendi!';
-            setTimeout(() => {
-                btn.innerText = '🔄 Verileri Yenile';
-                btn.disabled = false;
-            }, 1000);
-        }, 500);
-    });
-}
 
 // Initialize (GÜNCELLENDİ)
 window.addEventListener('load', function() {
