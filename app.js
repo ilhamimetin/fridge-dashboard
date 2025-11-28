@@ -607,7 +607,9 @@ function updateDisplay(value, type) {
     const timeEl = document.getElementById(type + '-time');
     const statusEl = document.getElementById(type + '-status');
     
-    tempEl.innerText = value + ' °C';
+    // YENİ: 1 ondalık basamak göster
+    tempEl.innerText = value.toFixed(1) + ' °C';
+    
     timeEl.innerText = formatTime(now);
     
     const status = checkStatus(value, type, true);
