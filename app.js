@@ -587,6 +587,21 @@ function updateConnectionStatus() {
     updateSensorStatus('freezer', lastFreezerUpdate);
 }
 
+function checkStatus(temp, type, isConnected) {
+    if (!isConnected) return { class: 'offline', text: '⚠️ Bağlantı Yok' };
+    
+    if (type === 'fridge') {
+        if (temp > 8) return { class: 'danger', text: '🔥 Çok Sıcak!' };
+        if (temp > 6) return { class: 'warning', text: '⚡ Dikkat' };
+        if (temp < 2) return { class: 'warning', text: '❄️ Çok Soğuk' };
+        return { class: 'ok', text: '✓ Normal' };
+    } else {
+        if (temp > -10) return { class: 'danger', text: '🔥 Çok Sıcak!' };
+        if (temp > -15) return { class: 'warning', text: '⚡ Dikkat' };
+        if (temp < -25) return { class: 'warning', text: '❄️ Çok Soğuk' };
+        return { class: 'ok', text: '✓ Normal' };
+    }
+}
 
 function updateSensorStatus(type, lastUpdate) {
     const tempEl = document.getElementById(type);
@@ -703,21 +718,7 @@ function formatDuration(milliseconds) {
     return seconds + ' saniye';
 }
 
-function checkStatus(temp, type, isConnected) {
-    if (!isConnected) return { class: 'offline', text: '⚠️ Bağlantı Yok' };
-    
-    if (type === 'fridge') {
-        if (temp > 8) return { class: 'danger', text: '🔥 Çok Sıcak!' };
-        if (temp > 6) return { class: 'warning', text: '⚡ Dikkat' };
-        if (temp < 2) return { class: 'warning', text: '❄️ Çok Soğuk' };
-        return { class: 'ok', text: '✓ Normal' };
-    } else {
-        if (temp > -10) return { class: 'danger', text: '🔥 Çok Sıcak!' };
-        if (temp > -15) return { class: 'warning', text: '⚡ Dikkat' };
-        if (temp < -25) return { class: 'warning', text: '❄️ Çok Soğuk' };
-        return { class: 'ok', text: '✓ Normal' };
-    }
-}
+
 
 // Initialize (GÜNCELLENDİ)
 window.addEventListener('load', function() {
