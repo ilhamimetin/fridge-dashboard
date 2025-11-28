@@ -690,15 +690,51 @@ firebase.database().ref("freezer").on("value", function (snapshot) {
     }
 });
 
-// YENİ: Genel timestamp güncelleme fonksiyonu
+// YENİ: Genel timestamp güncelleme fonksiyonu - GÜNCELLENDİ
 function updateOverallTimestamp() {
     if (lastFridgeUpdate || lastFreezerUpdate) {
         lastOverallUpdate = new Date(Math.max(
             lastFridgeUpdate ? lastFridgeUpdate.getTime() : 0,
             lastFreezerUpdate ? lastFreezerUpdate.getTime() : 0
         ));
+        
+        // YENİ: Connection status'u hemen güncelle
+        updateConnectionStatus();
+        console.log("🔄 Connection status güncellendi");
     }
 }
+
+// Firebase Listeners'a da ekleyelim
+firebase.database().ref("fridge").on("value", function (snapshot) {
+    const value = snapshot.val();
+    if (value !== null) {
+        console.log("✅ Fridge verisi alındı:", value);
+        
+        firebase.database().ref("fridgeLastUpdate").once("value").then(timeSnapshot => {
+            const timestamp = timeSnapshot.val();
+            console.log("🕒 Fridge Timestamp:", timestamp);
+            
+            let updateTime = new Date();
+            if (timestamp) {
+                updateTime = new Date(parseInt(timestamp) * 1000);
+                console.log("🕒 Fridge Tarih:", updateTime);
+            }
+            
+            document.getElementById('fridge').textContent = value.toFixed(1) + ' °C';
+            document.getElementById('fridge-time').textContent = formatTime(updateTime);
+            lastFridgeUpdate = updateTime;
+            updateOverallTimestamp(); // Bu zaten var
+            
+            // YENİ: Hemen status güncelle
+            const status = checkStatus(value, 'fridge', true);
+            document.getElementById('fridge-status').className = 'sensor-status ' + status.class;
+            document.getElementById('fridge-status').innerText = status.text;
+            
+            // YENİ: Connection status'u zorla güncelle
+            setTimeout(updateConnectionStatus, 100);
+        });
+    }
+});
 
 // Initialize (GÜNCELLENDİ)
 window.addEventListener('load', function() {
