@@ -627,13 +627,24 @@ function updateDisplay(value, type) {
     updateConnectionStatus();
 }
 
-// Firebase Listeners
-firebase.database().ref("fridge").on("value", function (snapshot) {
+//// Firebase Listeners
+//firebase.database().ref("fridge").on("value", function (snapshot) {
+//    const value = snapshot.val();
+//    if (value !== null) updateDisplay(value, 'fridge');
+//});
+
+//firebase.database().ref("freezer").on("value", function (snapshot) {
+//    const value = snapshot.val();
+//    if (value !== null) updateDisplay(value, 'freezer');
+// });
+
+// Firebase Listeners - YENİ YOL
+firebase.database().ref("locations/buzdolabi/normal").on("value", function (snapshot) {
     const value = snapshot.val();
     if (value !== null) updateDisplay(value, 'fridge');
 });
 
-firebase.database().ref("freezer").on("value", function (snapshot) {
+firebase.database().ref("locations/buzdolabi/dondurucu").on("value", function (snapshot) {
     const value = snapshot.val();
     if (value !== null) updateDisplay(value, 'freezer');
 });
