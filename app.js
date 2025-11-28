@@ -633,27 +633,31 @@ function updateDisplay(value, type) {
     updateConnectionStatus();
 }
 
-// Firebase Listeners - DEBUG'lı versiyon
+// Firebase Listeners - Saniye timestamp desteği
 firebase.database().ref("fridge").on("value", function (snapshot) {
     const value = snapshot.val();
     if (value !== null) {
         console.log("✅ Fridge verisi alındı:", value);
-        updateDisplay(value, 'fridge');
         
-        // Timestamp debug
         firebase.database().ref("fridgeLastUpdate").once("value").then(timeSnapshot => {
             const timestamp = timeSnapshot.val();
             console.log("🕒 Fridge Timestamp:", timestamp);
+            
+            let updateTime = new Date();
             if (timestamp) {
-                const updateTime = new Date(parseInt(timestamp));
+                // YENİ: Saniyeyi milisaniyeye çevir (× 1000)
+                updateTime = new Date(parseInt(timestamp) * 1000);
                 console.log("🕒 Fridge Tarih:", updateTime);
-                document.getElementById('fridge-time').textContent = formatTime(updateTime);
-                lastFridgeUpdate = updateTime;
-                updateOverallTimestamp();
-            } else {
-                console.log("❌ Fridge timestamp yok!");
-                document.getElementById('fridge-time').textContent = "Bekleniyor...";
             }
+            
+            document.getElementById('fridge').textContent = value.toFixed(1) + ' °C';
+            document.getElementById('fridge-time').textContent = formatTime(updateTime);
+            lastFridgeUpdate = updateTime;
+            updateOverallTimestamp();
+            
+            const status = checkStatus(value, 'fridge', true);
+            document.getElementById('fridge-status').className = 'sensor-status ' + status.class;
+            document.getElementById('fridge-status').innerText = status.text;
         });
     }
 });
@@ -662,22 +666,26 @@ firebase.database().ref("freezer").on("value", function (snapshot) {
     const value = snapshot.val();
     if (value !== null) {
         console.log("✅ Freezer verisi alındı:", value);
-        updateDisplay(value, 'freezer');
         
-        // Timestamp debug
         firebase.database().ref("freezerLastUpdate").once("value").then(timeSnapshot => {
             const timestamp = timeSnapshot.val();
             console.log("🕒 Freezer Timestamp:", timestamp);
+            
+            let updateTime = new Date();
             if (timestamp) {
-                const updateTime = new Date(parseInt(timestamp));
+                // YENİ: Saniyeyi milisaniyeye çevir (× 1000)
+                updateTime = new Date(parseInt(timestamp) * 1000);
                 console.log("🕒 Freezer Tarih:", updateTime);
-                document.getElementById('freezer-time').textContent = formatTime(updateTime);
-                lastFreezerUpdate = updateTime;
-                updateOverallTimestamp();
-            } else {
-                console.log("❌ Freezer timestamp yok!");
-                document.getElementById('freezer-time').textContent = "Bekleniyor...";
             }
+            
+            document.getElementById('freezer').textContent = value.toFixed(1) + ' °C';
+            document.getElementById('freezer-time').textContent = formatTime(updateTime);
+            lastFreezerUpdate = updateTime;
+            updateOverallTimestamp();
+            
+            const status = checkStatus(value, 'freezer', true);
+            document.getElementById('freezer-status').className = 'sensor-status ' + status.class;
+            document.getElementById('freezer-status').innerText = status.text;
         });
     }
 });
