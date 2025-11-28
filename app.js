@@ -691,6 +691,34 @@ function updateOverallTimestamp() {
     }
 }
 
+// ============================================
+// EKSİK FONKSİYONLAR - EKLENECEK
+// ============================================
+
+function formatDuration(milliseconds) {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    if (minutes > 0) return minutes + ' dakika ' + seconds + ' saniye';
+    return seconds + ' saniye';
+}
+
+function checkStatus(temp, type, isConnected) {
+    if (!isConnected) return { class: 'offline', text: '⚠️ Bağlantı Yok' };
+    
+    if (type === 'fridge') {
+        if (temp > 8) return { class: 'danger', text: '🔥 Çok Sıcak!' };
+        if (temp > 6) return { class: 'warning', text: '⚡ Dikkat' };
+        if (temp < 2) return { class: 'warning', text: '❄️ Çok Soğuk' };
+        return { class: 'ok', text: '✓ Normal' };
+    } else {
+        if (temp > -10) return { class: 'danger', text: '🔥 Çok Sıcak!' };
+        if (temp > -15) return { class: 'warning', text: '⚡ Dikkat' };
+        if (temp < -25) return { class: 'warning', text: '❄️ Çok Soğuk' };
+        return { class: 'ok', text: '✓ Normal' };
+    }
+}
+
 // Initialize (GÜNCELLENDİ)
 window.addEventListener('load', function() {
     initTheme();
