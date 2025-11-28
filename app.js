@@ -583,8 +583,8 @@ function updateConnectionStatus() {
     }
     
     lastUpdateText.innerText = 'Son güncelleme: ' + timeAgo(lastOverallUpdate);
-    updateSensorStatus('fridge', lastFridgeUpdate);
-    updateSensorStatus('freezer', lastFreezerUpdate);
+    // updateSensorStatus('fridge', lastFridgeUpdate);
+    // updateSensorStatus('freezer', lastFreezerUpdate);
 }
 
 function checkStatus(temp, type, isConnected) {
@@ -602,6 +602,7 @@ function checkStatus(temp, type, isConnected) {
         return { class: 'ok', text: '✓ Normal' };
     }
 }
+
 
 function updateSensorStatus(type, lastUpdate) {
     const tempEl = document.getElementById(type);
