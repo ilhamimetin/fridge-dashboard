@@ -439,6 +439,7 @@ firebase.database().ref("devices/kitchen/fridge").on("value", function(snapshot)
     }
     // Web timestamp'i Firebase'e yaz
     firebase.database().ref("devices/kitchen/lastUpdate").set(Date.now());
+    updateConnectionStatus();
 });
 
 // Freezer listener'ına ekle
@@ -458,6 +459,7 @@ firebase.database().ref("devices/kitchen/freezer").on("value", function(snapshot
     }
     // Web timestamp'i Firebase'e yaz
     firebase.database().ref("devices/kitchen/lastUpdate").set(Date.now());
+    updateConnectionStatus();
 });
 
 // ============================================
