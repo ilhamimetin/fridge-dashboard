@@ -459,6 +459,9 @@ firebase.database().ref("fridge").on("value", function(snapshot) {
         console.log("🧊 Fridge:", value);
         document.getElementById('fridge').textContent = value.toFixed(1) + ' °C';
         document.getElementById('fridge-time').textContent = new Date().toLocaleTimeString();
+        const status = checkStatus(value, 'fridge', true);
+        document.getElementById('fridge-status').className = 'sensor-status ' + status.class;
+        document.getElementById('fridge-status').innerText = status.text;
     }
 });
 
@@ -468,6 +471,9 @@ firebase.database().ref("freezer").on("value", function(snapshot) {
         console.log("❄️ Freezer:", value);
         document.getElementById('freezer').textContent = value.toFixed(1) + ' °C';
         document.getElementById('freezer-time').textContent = new Date().toLocaleTimeString();
+        const status = checkStatus(value, 'freezer', true);
+        document.getElementById('freezer-status').className = 'sensor-status ' + status.class;
+        document.getElementById('freezer-status').innerText = status.text;
     }
 });
 
@@ -486,7 +492,7 @@ firebase.database().ref("lastUpdate").on("value", function(snapshot) {
             document.getElementById('powerAlert').classList.remove('show');
         }
         
-        document.getElementById('lastUpdateText').innerText = 'Son güncelleme: ' + Math.floor(diff/1000) + ' saniye önce';
+       document.getElementById('lastUpdateText').innerText = 'Son güncelleme: ' + timeAgo(new Date(parseInt(lastUpdate)));
     }
 });
 
