@@ -870,9 +870,16 @@ if ('serviceWorker' in navigator) {
 // ELEKTRİK KESİNTİSİ FONKSİYONLARI
 // ============================================
 
-// Elektrik kesintisi kaydet
+// Elektrik kesintisi kaydet - GÜNCELLENMİŞ
 function saveOutage(startTime, endTime) {
     const duration = endTime - startTime;
+    
+    // SADECE 2 DAKİKADAN UZUN KESİNTİLERİ KAYDET
+    if (duration < 120000) {
+        console.log("⏱️ Kısa kesinti, kaydedilmiyor:", duration + " ms");
+        return;
+    }
+    
     const timestamp = new Date(startTime).toISOString().replace(/[:.]/g, '-');
     
     firebase.database().ref(`stats/outages/${timestamp}`).set({
