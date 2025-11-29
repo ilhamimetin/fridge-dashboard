@@ -8,6 +8,12 @@ var firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
+// TEMİZLİK: ESKİ TIMESTAMP'LERİ SİL (BİR KERE ÇALIŞTIR)
+firebase.database().ref("devices/kitchen/lastUpdate").remove();
+firebase.database().ref("devices/kitchen/fridgeLastUpdate").remove();
+firebase.database().ref("devices/kitchen/freezerLastUpdate").remove();
+console.log("🧹 Eski timestamp'ler temizlendi");
+
 // Global Variables
 let lastFridgeUpdate = null;
 let lastFreezerUpdate = null;
