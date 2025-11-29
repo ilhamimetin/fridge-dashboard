@@ -438,21 +438,19 @@ function updateConnectionStatus() {
     lastUpdateText.innerText = 'Son güncelleme: ' + timeAgo(lastOverallUpdate);
 }
 // Son güncelleme zamanını dinle - DÜZELTİLMİŞ
+// Son güncelleme zamanını dinle - DEBUG'lu
 firebase.database().ref("lastUpdate").on("value", function(snapshot) {
-    const lastUpdateValue = snapshot.val();
-    console.log("🔥 Firebase'den gelen değer:", lastUpdateValue);
+    const lastUpdateTimestamp = snapshot.val();
+    console.log("📡 Firebase'den yeni veri:", lastUpdateTimestamp);
     
-    if (lastUpdateValue) {
-        // Wemos'tan gelen millis() değerini Date'e çevir
-        const currentMillis = Date.now(); // Şu anki zaman (milisaniye)
-        const wemosMillis = parseInt(lastUpdateValue); // Wemos'tan gelen millis()
+    if (lastUpdateTimestamp) {
+        const oldTime = lastOverallUpdate;
+        lastOverallUpdate = new Date(parseInt(lastUpdateTimestamp) * 1000);
         
-        // Wemos'un başlangıç zamanını hesapla
-        const estimatedDate = new Date(currentMillis - (currentMillis % 86400000) + wemosMillis);
+        console.log("🕒 Önceki zaman:", oldTime);
+        console.log("🕒 Yeni zaman:", lastOverallUpdate);
+        console.log("⏰ Fark:", (lastOverallUpdate - (oldTime || new Date(0))) + " ms");
         
-        lastOverallUpdate = estimatedDate;
-        console.log("📅 Hesaplanan tarih:", lastOverallUpdate);
-        console.log("🕒 timeAgo sonucu:", timeAgo(lastOverallUpdate));
         updateConnectionStatus();
     }
 });
