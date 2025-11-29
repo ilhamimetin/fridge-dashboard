@@ -452,28 +452,37 @@ function updateDisplay(value, type) {
 // FIREBASE LISTENERS (GÜNCELLENDİ)
 // ============================================
 
-// Firebase Listeners - BASİT ve GÜVENLİ
+// Fridge listener'ına ekle
 firebase.database().ref("fridge").on("value", function(snapshot) {
     const value = snapshot.val();
     if (value !== null) {
         console.log("🧊 Fridge:", value);
         document.getElementById('fridge').textContent = value.toFixed(1) + ' °C';
         document.getElementById('fridge-time').textContent = new Date().toLocaleTimeString();
+        
         const status = checkStatus(value, 'fridge', true);
         document.getElementById('fridge-status').className = 'sensor-status ' + status.class;
         document.getElementById('fridge-status').innerText = status.text;
+        
+        // SON GÜNCELLEMEYİ KAYDET
+        lastOverallUpdate = new Date();
     }
 });
 
+// Freezer listener'ına ekle
 firebase.database().ref("freezer").on("value", function(snapshot) {
     const value = snapshot.val();
     if (value !== null) {
         console.log("❄️ Freezer:", value);
         document.getElementById('freezer').textContent = value.toFixed(1) + ' °C';
         document.getElementById('freezer-time').textContent = new Date().toLocaleTimeString();
+        
         const status = checkStatus(value, 'freezer', true);
         document.getElementById('freezer-status').className = 'sensor-status ' + status.class;
         document.getElementById('freezer-status').innerText = status.text;
+        
+        // SON GÜNCELLEMEYİ KAYDET
+        lastOverallUpdate = new Date();
     }
 });
 
@@ -991,25 +1000,22 @@ window.addEventListener('load', function() {
     });
 
     // Her 10 saniyede bir elektrik kesintisi kontrolü
+/ Her 10 saniyede bir kontrol
 setInterval(function() {
-    firebase.database().ref("lastUpdate").once("value").then(snapshot => {
-        const lastUpdate = snapshot.val();
-        if (lastUpdate) {
-            const lastUpdateTime = parseInt(lastUpdate) * 1000;
-            const diff = Date.now() - lastUpdateTime;
-            
-            if (diff > 120000) { // 2 dakika
-                document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
-                document.getElementById('powerAlert').classList.add('show');
-                const minutes = Math.floor(diff / 60000);
-                document.getElementById('powerAlertTime').innerText = minutes + ' dakika';
-            } else {
-                document.getElementById('statusText').innerText = '🟢 Bağlı';
-                document.getElementById('powerAlert').classList.remove('show');
-            }
-            
-            document.getElementById('lastUpdateText').innerText = 'Son güncelleme: ' + timeAgo(new Date(lastUpdateTime));
+    if (lastOverallUpdate) {
+        const diff = Date.now() - lastOverallUpdate.getTime();
+        
+        if (diff > 180000) { // 3 dakika
+            document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
+            document.getElementById('powerAlert').classList.add('show');
+            const minutes = Math.floor(diff / 60000);
+            document.getElementById('powerAlertTime').innerText = minutes + ' dakika';
+        } else {
+            document.getElementById('statusText').innerText = '🟢 Bağlı';
+            document.getElementById('powerAlert').classList.remove('show');
         }
-    });
-}, 10000); // 10 saniye
+        
+        document.getElementById('lastUpdateText').innerText = 'Son güncelleme: ' + timeAgo(lastOverallUpdate);
+    }
+}, 10000);
 });
