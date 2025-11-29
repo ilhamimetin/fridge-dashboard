@@ -989,4 +989,26 @@ window.addEventListener('load', function() {
             showTempAlert('🔴 Firebase bağlantısı kesildi', 'danger');
         }
     });
+
+    // Her 10 saniyede bir elektrik kesintisi kontrolü
+setInterval(function() {
+    firebase.database().ref("lastUpdate").once("value").then(snapshot => {
+        const lastUpdate = snapshot.val();
+        if (lastUpdate) {
+            const lastUpdateTime = parseInt(lastUpdate) * 1000;
+            const diff = Date.now() - lastUpdateTime;
+            
+            if (diff > 120000) { // 2 dakika
+                document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
+                document.getElementById('powerAlert').classList.add('show');
+                document.getElementById('powerAlertTime').innerText = timeAgo(new Date(lastUpdateTime));
+            } else {
+                document.getElementById('statusText').innerText = '🟢 Bağlı';
+                document.getElementById('powerAlert').classList.remove('show');
+            }
+            
+            document.getElementById('lastUpdateText').innerText = 'Son güncelleme: ' + timeAgo(new Date(lastUpdateTime));
+        }
+    });
+}, 10000); // 10 saniye
 });
