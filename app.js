@@ -472,15 +472,11 @@ firebase.database().ref("freezer").on("value", function(snapshot) {
 });
 
 // Elektrik kesintisi - SON ÇÖZÜM
+// Elektrik kesintisi - BASİT
 firebase.database().ref("lastUpdate").on("value", function(snapshot) {
     const lastUpdate = snapshot.val();
     if (lastUpdate) {
-        // UNIX timestamp (saniye) → milisaniye
-        const lastUpdateMillis = parseInt(lastUpdate) * 1000;
-        const nowMillis = Date.now();
-        const diff = nowMillis - lastUpdateMillis;
-        
-        console.log("⏰ Gerçek fark:", Math.floor(diff/1000) + " saniye");
+        const diff = Date.now() - parseInt(lastUpdate);
         
         if (diff > 120000) { // 2 dakika
             document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
