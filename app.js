@@ -375,61 +375,24 @@ function checkPowerOutage() {
 
 // Bağlantı durumunu güncelle
 function updateConnectionStatus() {
+    if (!lastOverallUpdate) return;
+    
     const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
     const lastUpdateText = document.getElementById('lastUpdateText');
     const powerAlert = document.getElementById('powerAlert');
-    const reconnectAlert = document.getElementById('reconnectAlert');
     
-    if (!lastOverallUpdate) {
-        statusText.innerText = 'Bağlantı Kuruluyor...';
-        return;
-    }
+    const timeSinceUpdate = Date.now() - lastOverallUpdate.getTime();
+    const minutesSinceUpdate = Math.floor(timeSinceUpdate / (1000 * 60));
     
-    const timeSinceUpdate = new Date() - lastOverallUpdate;
-    const secondsSinceUpdate = Math.floor(timeSinceUpdate / 1000);
-    
-    console.log("⏰ Son güncellemeden beri geçen süre:", secondsSinceUpdate + " saniye");
-    
-    // 2 DAKİKADAN FAZLA ise elektrik kesintisi (120 saniye)
-    if (secondsSinceUpdate > 120) {
-        if (isOnline) {
-            isOnline = false;
-            wasOffline = true;
-            offlineStartTime = new Date();
-            statusDot.className = 'status-dot offline';
-            statusText.innerText = '🔴 Elektrik Kesildi';
-            powerAlert.classList.add('show');
-            reconnectAlert.classList.remove('show');
-            powerAlertTime.innerText = timeAgo(lastOverallUpdate);
-            
-            // GERÇEK kesintiyi kaydet (sadece 2 dakikadan uzunsa)
-            saveOutage(offlineStartTime.getTime(), new Date().getTime());
-            
-            notifyPowerOutage();
-        }
-    } 
-    // 1-2 DAKİKA arası bağlantı sorunu
-    else if (secondsSinceUpdate > 60) {
+    // 3 DAKİKADAN FAZLA ise elektrik kesintisi
+    if (minutesSinceUpdate > 3) {
         statusDot.className = 'status-dot offline';
-        statusText.innerText = '🟡 Bağlantı Sorunu';
-        powerAlert.classList.remove('show');
-    }
-    // NORMAL (60 saniyeden az)
+        statusText.innerText = '🔴 Elektrik Kesildi';
+        powerAlert.classList.add('show');
+    } 
+    // NORMAL
     else {
-        if (!isOnline && wasOffline) {
-            const outageDuration = new Date() - offlineStartTime;
-            
-            // Sadece 2 dakikadan uzun kesintiler için "yeniden bağlandı" göster
-            if (outageDuration > 120000) {
-                const durationText = formatDuration(outageDuration);
-                document.getElementById('outageDuration').innerText = durationText;
-                reconnectAlert.classList.add('show');
-                setTimeout(() => reconnectAlert.classList.remove('show'), 10000);
-                notifyReconnected(durationText);
-            }
-        }
-        isOnline = true;
         statusDot.className = 'status-dot online';
         statusText.innerText = '🟢 Bağlı';
         powerAlert.classList.remove('show');
@@ -437,23 +400,7 @@ function updateConnectionStatus() {
     
     lastUpdateText.innerText = 'Son güncelleme: ' + timeAgo(lastOverallUpdate);
 }
-// Son güncelleme zamanını dinle - DÜZELTİLMİŞ
-// Son güncelleme zamanını dinle - DEBUG'lu
-firebase.database().ref("lastUpdate").on("value", function(snapshot) {
-    const lastUpdateTimestamp = snapshot.val();
-    console.log("📡 Firebase'den yeni veri:", lastUpdateTimestamp);
-    
-    if (lastUpdateTimestamp) {
-        const oldTime = lastOverallUpdate;
-        lastOverallUpdate = new Date(parseInt(lastUpdateTimestamp) * 1000);
-        
-        console.log("🕒 Önceki zaman:", oldTime);
-        console.log("🕒 Yeni zaman:", lastOverallUpdate);
-        console.log("⏰ Fark:", (lastOverallUpdate - (oldTime || new Date(0))) + " ms");
-        
-        updateConnectionStatus();
-    }
-});
+
 // Sıcaklık durumunu kontrol et
 function checkStatus(temp, type, isConnected) {
     if (!isConnected) return { class: 'offline', text: '⚠️ Bağlantı Yok' };
