@@ -466,8 +466,6 @@ firebase.database().ref("fridge").on("value", function(snapshot) {
         
         // SON GÜNCELLEMEYİ KAYDET
         lastOverallUpdate = new Date();
-        // SON GÜNCELLEMEYİ KAYDET
-        lastOverallUpdate = new Date();
         console.log("✅ lastOverallUpdate güncellendi:", lastOverallUpdate);
     }
 });
