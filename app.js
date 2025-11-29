@@ -481,7 +481,6 @@ firebase.database().ref("freezer").on("value", function(snapshot) {
 firebase.database().ref("lastUpdate").on("value", function(snapshot) {
     const lastUpdate = snapshot.val();
     if (lastUpdate) {
-        // Arduino saniye cinsinden gönderiyor, biz milisaniyeye çeviriyoruz
         const lastUpdateTime = parseInt(lastUpdate) * 1000;
         const diff = Date.now() - lastUpdateTime;
         
