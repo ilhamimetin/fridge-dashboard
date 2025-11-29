@@ -424,12 +424,13 @@ function updateConnectionStatus() {
     checkPowerOutage();
 }
 
-// Son güncelleme zamanını dinle
+// Son güncelleme zamanını dinle - UNIX TIMESTAMP için
 firebase.database().ref("lastUpdate").on("value", function(snapshot) {
-    const lastUpdate = snapshot.val();
-    if (lastUpdate) {
-        lastOverallUpdate = new Date(parseInt(lastUpdate));
+    const lastUpdateMillis = snapshot.val();
+    if (lastUpdateMillis) {
+        lastOverallUpdate = new Date(parseInt(lastUpdateMillis));
         updateConnectionStatus();
+        console.log("✅ Son güncelleme:", timeAgo(lastOverallUpdate));
     }
 });
 
