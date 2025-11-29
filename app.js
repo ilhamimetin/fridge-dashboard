@@ -903,3 +903,42 @@ function displayOutageHistory(outages) {
         document.getElementById('weekly-outage-duration').textContent = `${minutes} dk`;
     }
 }
+
+// Uygulama başlatma
+window.addEventListener('load', function() {
+    console.log('🚀 Buzdolabı Takip Sistemi Başlatılıyor...');
+    
+    // Temayı yükle
+    initTheme();
+    
+    // Grafiği oluştur
+    createRealChart();
+    
+    // İstatistikleri yükle
+    loadDailyStats();
+    loadWeeklySummary();
+    loadOutageHistory();
+    
+    // Bağlantı durumunu kontrol et
+    setInterval(updateConnectionStatus, 5000);
+    
+    // Bildirim izni iste (5 saniye sonra)
+    setTimeout(() => {
+        requestNotificationPermission().then(permission => {
+            if (permission) {
+                console.log('✅ Bildirim izni alındı');
+            }
+        });
+    }, 5000);
+    
+    // Firebase bağlantısını kontrol et
+    firebase.database().ref('.info/connected').on('value', (snapshot) => {
+        if (snapshot.val() === true) {
+            console.log('✅ Firebase bağlantısı aktif');
+            showTempAlert('🔥 Firebase bağlantısı kuruldu', 'success');
+        } else {
+            console.log('❌ Firebase bağlantısı kesildi');
+            showTempAlert('🔴 Firebase bağlantısı kesildi', 'danger');
+        }
+    });
+});
