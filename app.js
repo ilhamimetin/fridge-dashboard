@@ -471,13 +471,15 @@ firebase.database().ref("freezer").on("value", function(snapshot) {
     }
 });
 
-
-// Elektrik kesintisi - BASİT
+// Elektrik kesintisi - DÜZELTİLMİŞ
 firebase.database().ref("lastUpdate").on("value", function(snapshot) {
     const lastUpdate = snapshot.val();
     if (lastUpdate) {
-        const now = Date.now();
-        const diff = now - parseInt(lastUpdate);
+        const nowMillis = Date.now();
+        const lastUpdateMillis = parseInt(lastUpdate);
+        const diff = nowMillis - lastUpdateMillis;
+        
+        console.log("⏰ Millis farkı:", diff + " ms");
         
         if (diff > 120000) { // 2 dakika
             document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
@@ -486,6 +488,9 @@ firebase.database().ref("lastUpdate").on("value", function(snapshot) {
             document.getElementById('statusText').innerText = '🟢 Bağlı';
             document.getElementById('powerAlert').classList.remove('show');
         }
+        
+        // Son güncelleme zamanını göster
+        document.getElementById('lastUpdateText').innerText = 'Son güncelleme: ' + Math.floor(diff/1000) + ' saniye önce';
     }
 });
 
