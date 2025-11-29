@@ -952,6 +952,3 @@ window.addEventListener('load', function() {
             showTempAlert('🔴 Firebase bağlantısı kesildi', 'danger');
         }
     });
- 
-// Her 10 saniyede bir elektrik kesintisi kontrolü
-setInterval(updateConnectionStatus, 5000);
