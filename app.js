@@ -454,19 +454,42 @@ function updateDisplay(value, type) {
 
 firebase.database().ref("fridge").on("value", function(snapshot) {
     const value = snapshot.val();
+    console.log("🔥 YENİ Fridge verisi:", value);
+    
     if (value !== null) {
-        console.log("✅ Fridge verisi alındı:", value);
-        updateDisplay(value, 'fridge');
+        document.getElementById('fridge').textContent = value.toFixed(1) + ' °C';
+        document.getElementById('fridge-time').textContent = formatTime(new Date());
+        
+        const status = checkStatus(value, 'fridge', true);
+        document.getElementById('fridge-status').className = 'sensor-status ' + status.class;
+        document.getElementById('fridge-status').innerText = status.text;
+        
+        // Grafiği güncelle
+        updateChartWithNewData(value, parseFloat(document.getElementById('freezer').textContent) || value);
     }
+}, function(error) {
+    console.error("❌ Fridge veri hatası:", error);
 });
 
 firebase.database().ref("freezer").on("value", function(snapshot) {
     const value = snapshot.val();
+    console.log("🔥 YENİ Freezer verisi:", value);
+    
     if (value !== null) {
-        console.log("✅ Freezer verisi alındı:", value);
-        updateDisplay(value, 'freezer');
+        document.getElementById('freezer').textContent = value.toFixed(1) + ' °C';
+        document.getElementById('freezer-time').textContent = formatTime(new Date());
+        
+        const status = checkStatus(value, 'freezer', true);
+        document.getElementById('freezer-status').className = 'sensor-status ' + status.class;
+        document.getElementById('freezer-status').innerText = status.text;
+        
+        // Grafiği güncelle
+        updateChartWithNewData(parseFloat(document.getElementById('fridge').textContent) || value, value);
     }
+}, function(error) {
+    console.error("❌ Freezer veri hatası:", error);
 });
+
 
 // ============================================
 // YARDIMCI FONKSİYONLAR
@@ -511,6 +534,7 @@ window.addEventListener('load', function() {
     createRealChart(); // Fake data yerine real chart
     loadDailyStats();
     loadWeeklySummary();
+    loadOutageHistory();
     
     // Bildirim izni iste
     setTimeout(() => {
