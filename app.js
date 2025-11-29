@@ -342,6 +342,37 @@ function updateWeeklySummary(fridgeData, freezerData) {
 // TEMEL FONKSİYONLAR (GÜNCELLENDİ)
 // ============================================
 
+
+// Elektrik kesintisi kontrolü - GERÇEK ÇÖZÜM
+function checkPowerOutage() {
+    if (!lastOverallUpdate) return;
+    
+    const now = new Date();
+    const timeDiff = now - lastOverallUpdate;
+    const minutesDiff = Math.floor(timeDiff / (1000 * 60));
+    
+    // 2 dakikadan fazla süredir veri yoksa elektrik kesik
+    if (minutesDiff > 2) {
+        document.getElementById('statusDot').className = 'status-dot offline';
+        document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
+        document.getElementById('powerAlert').classList.add('show');
+        document.getElementById('powerAlertTime').innerText = timeAgo(lastOverallUpdate);
+        
+        // Bildirim gönder (5 dakikada bir)
+        if (Date.now() - lastNotificationTime.power > 300000) {
+            sendNotification(
+                '⚡ Elektrik Kesildi!', 
+                'Buzdolabından ' + minutesDiff + ' dakikadır veri gelmiyor.', 
+                '⚡'
+            );
+            lastNotificationTime.power = Date.now();
+        }
+    } else {
+        document.getElementById('powerAlert').classList.remove('show');
+    }
+}
+
+
 // Bağlantı durumunu güncelle
 function updateConnectionStatus() {
     const statusDot = document.getElementById('statusDot');
@@ -388,6 +419,9 @@ function updateConnectionStatus() {
     }
     
     lastUpdateText.innerText = 'Son güncelleme: ' + timeAgo(lastOverallUpdate);
+
+    // Elektrik kesintisi kontrolünü de yap
+    checkPowerOutage();
 }
 
 // Sıcaklık durumunu kontrol et
