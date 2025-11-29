@@ -1001,7 +1001,8 @@ setInterval(function() {
             if (diff > 120000) { // 2 dakika
                 document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
                 document.getElementById('powerAlert').classList.add('show');
-                document.getElementById('powerAlertTime').innerText = timeAgo(new Date(lastUpdateTime));
+                const minutes = Math.floor(diff / 60000);
+                document.getElementById('powerAlertTime').innerText = minutes + ' dakika';
             } else {
                 document.getElementById('statusText').innerText = '🟢 Bağlı';
                 document.getElementById('powerAlert').classList.remove('show');
