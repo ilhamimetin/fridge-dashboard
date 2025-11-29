@@ -8,6 +8,9 @@ var firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
+firebase.database().ref("devices/kitchen/fridge").off();
+firebase.database().ref("devices/kitchen/freezer").off();
+
 // Global Variables
 let lastFridgeUpdate = null;
 let lastFreezerUpdate = null;
@@ -433,13 +436,18 @@ firebase.database().ref("devices/kitchen/fridge").on("value", function(snapshot)
         document.getElementById('fridge-status').className = 'sensor-status ' + status.class;
         document.getElementById('fridge-status').innerText = status.text;
         
-        // SON GÜNCELLEMEYİ KAYDET
-        lastOverallUpdate = new Date();
-        console.log("✅ lastOverallUpdate güncellendi:", lastOverallUpdate);
+        // SON GÜNCELLEMEYİ KAYDET - SADECE BAĞLI İSE
+        firebase.database().ref('.info/connected').once('value').then((connSnap) => {
+            if (connSnap.val() === true) {
+                lastOverallUpdate = new Date();
+                console.log("✅ lastOverallUpdate güncellendi:", lastOverallUpdate);
+                
+                // Web timestamp'i Firebase'e yaz
+                firebase.database().ref("devices/kitchen/lastUpdate").set(Date.now());
+                updateConnectionStatus();
+            }
+        });
     }
-    // Web timestamp'i Firebase'e yaz
-    firebase.database().ref("devices/kitchen/lastUpdate").set(Date.now());
-    updateConnectionStatus();
 });
 
 // Freezer listener'ına ekle
@@ -454,12 +462,18 @@ firebase.database().ref("devices/kitchen/freezer").on("value", function(snapshot
         document.getElementById('freezer-status').className = 'sensor-status ' + status.class;
         document.getElementById('freezer-status').innerText = status.text;
         
-        // SON GÜNCELLEMEYİ KAYDET
-        lastOverallUpdate = new Date();
+        // SON GÜNCELLEMEYİ KAYDET - SADECE BAĞLI İSE
+        firebase.database().ref('.info/connected').once('value').then((connSnap) => {
+            if (connSnap.val() === true) {
+                lastOverallUpdate = new Date();
+                console.log("✅ lastOverallUpdate güncellendi:", lastOverallUpdate);
+                
+                // Web timestamp'i Firebase'e yaz
+                firebase.database().ref("devices/kitchen/lastUpdate").set(Date.now());
+                updateConnectionStatus();
+            }
+        });
     }
-    // Web timestamp'i Firebase'e yaz
-    firebase.database().ref("devices/kitchen/lastUpdate").set(Date.now());
-    updateConnectionStatus();
 });
 
 // ============================================
