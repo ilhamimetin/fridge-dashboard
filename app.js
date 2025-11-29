@@ -424,16 +424,25 @@ function updateConnectionStatus() {
     checkPowerOutage();
 }
 
-// Son güncelleme zamanını dinle - UNIX TIMESTAMP için
+// Son güncelleme zamanını dinle - DÜZELTİLMİŞ
 firebase.database().ref("lastUpdate").on("value", function(snapshot) {
-    const lastUpdateMillis = snapshot.val();
-    if (lastUpdateMillis) {
-        lastOverallUpdate = new Date(parseInt(lastUpdateMillis));
+    const lastUpdateValue = snapshot.val();
+    console.log("🔥 Firebase'den gelen değer:", lastUpdateValue);
+    
+    if (lastUpdateValue) {
+        // Wemos'tan gelen millis() değerini Date'e çevir
+        const currentMillis = Date.now(); // Şu anki zaman (milisaniye)
+        const wemosMillis = parseInt(lastUpdateValue); // Wemos'tan gelen millis()
+        
+        // Wemos'un başlangıç zamanını hesapla
+        const estimatedDate = new Date(currentMillis - (currentMillis % 86400000) + wemosMillis);
+        
+        lastOverallUpdate = estimatedDate;
+        console.log("📅 Hesaplanan tarih:", lastOverallUpdate);
+        console.log("🕒 timeAgo sonucu:", timeAgo(lastOverallUpdate));
         updateConnectionStatus();
-        console.log("✅ Son güncelleme:", timeAgo(lastOverallUpdate));
     }
 });
-
 // Sıcaklık durumunu kontrol et
 function checkStatus(temp, type, isConnected) {
     if (!isConnected) return { class: 'offline', text: '⚠️ Bağlantı Yok' };
