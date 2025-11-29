@@ -471,15 +471,16 @@ firebase.database().ref("freezer").on("value", function(snapshot) {
     }
 });
 
-// Elektrik kesintisi - DÜZELTİLMİŞ
+// Elektrik kesintisi - SON ÇÖZÜM
 firebase.database().ref("lastUpdate").on("value", function(snapshot) {
     const lastUpdate = snapshot.val();
     if (lastUpdate) {
+        // UNIX timestamp (saniye) → milisaniye
+        const lastUpdateMillis = parseInt(lastUpdate) * 1000;
         const nowMillis = Date.now();
-        const lastUpdateMillis = parseInt(lastUpdate);
         const diff = nowMillis - lastUpdateMillis;
         
-        console.log("⏰ Millis farkı:", diff + " ms");
+        console.log("⏰ Gerçek fark:", Math.floor(diff/1000) + " saniye");
         
         if (diff > 120000) { // 2 dakika
             document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
@@ -489,7 +490,6 @@ firebase.database().ref("lastUpdate").on("value", function(snapshot) {
             document.getElementById('powerAlert').classList.remove('show');
         }
         
-        // Son güncelleme zamanını göster
         document.getElementById('lastUpdateText').innerText = 'Son güncelleme: ' + Math.floor(diff/1000) + ' saniye önce';
     }
 });
