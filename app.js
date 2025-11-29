@@ -453,7 +453,7 @@ function updateDisplay(value, type) {
 // ============================================
 
 // Fridge listener'ına ekle
-firebase.database().ref("fridge").on("value", function(snapshot) {
+firebase.database().ref("devices/kitchen/fridge").on("value", function(snapshot) {
     const value = snapshot.val();
     if (value !== null) {
         console.log("🧊 Fridge:", value);
@@ -471,7 +471,7 @@ firebase.database().ref("fridge").on("value", function(snapshot) {
 });
 
 // Freezer listener'ına ekle
-firebase.database().ref("freezer").on("value", function(snapshot) {
+firebase.database().ref("devices/kitchen/freezer").on("value", function(snapshot) {
     const value = snapshot.val();
     if (value !== null) {
         console.log("❄️ Freezer:", value);
@@ -488,7 +488,7 @@ firebase.database().ref("freezer").on("value", function(snapshot) {
 });
 
 // Elektrik kesintisi - SON ÇÖZÜM
-firebase.database().ref("lastUpdate").on("value", function(snapshot) {
+firebase.database().ref("devices/kitchen/lastUpdate").on("value", function(snapshot) {
     const lastUpdate = snapshot.val();
     if (lastUpdate) {
         const lastUpdateTime = parseInt(lastUpdate) * 1000;
