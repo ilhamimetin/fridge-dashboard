@@ -1000,7 +1000,7 @@ window.addEventListener('load', function() {
     });
 
     // Her 10 saniyede bir elektrik kesintisi kontrolü
-/ Her 10 saniyede bir kontrol
+ Her 10 saniyede bir kontrol
 setInterval(function() {
     if (lastOverallUpdate) {
         const diff = Date.now() - lastOverallUpdate.getTime();
