@@ -954,4 +954,4 @@ window.addEventListener('load', function() {
             showTempAlert('🔴 Firebase bağlantısı kesildi', 'danger');
         }
     });
-}
+});  // ← BU EKSİKTİ!
