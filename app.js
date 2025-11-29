@@ -342,37 +342,6 @@ function updateWeeklySummary(fridgeData, freezerData) {
 // TEMEL FONKSİYONLAR (GÜNCELLENDİ)
 // ============================================
 
-
-// Elektrik kesintisi kontrolü - GERÇEK ÇÖZÜM
-function checkPowerOutage() {
-    if (!lastOverallUpdate) return;
-    
-    const now = new Date();
-    const timeDiff = now - lastOverallUpdate;
-    const minutesDiff = Math.floor(timeDiff / (1000 * 60));
-    
-    // 2 dakikadan fazla süredir veri yoksa elektrik kesik
-    if (minutesDiff > 2) {
-        document.getElementById('statusDot').className = 'status-dot offline';
-        document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
-        document.getElementById('powerAlert').classList.add('show');
-        document.getElementById('powerAlertTime').innerText = timeAgo(lastOverallUpdate);
-        
-        // Bildirim gönder (5 dakikada bir)
-        if (Date.now() - lastNotificationTime.power > 300000) {
-            sendNotification(
-                '⚡ Elektrik Kesildi!', 
-                'Buzdolabından ' + minutesDiff + ' dakikadır veri gelmiyor.', 
-                '⚡'
-            );
-            lastNotificationTime.power = Date.now();
-        }
-    } else {
-        document.getElementById('powerAlert').classList.remove('show');
-    }
-}
-
-
 // Bağlantı durumunu güncelle
 function updateConnectionStatus() {
     if (!lastOverallUpdate) return;
@@ -385,11 +354,12 @@ function updateConnectionStatus() {
     const timeSinceUpdate = Date.now() - lastOverallUpdate.getTime();
     const minutesSinceUpdate = Math.floor(timeSinceUpdate / (1000 * 60));
     
-    // 3 DAKİKADAN FAZLA ise elektrik kesintisi
-    if (minutesSinceUpdate > 3) {
+    // 1 DAKİKADAN FAZLA ise elektrik kesintisi (TEST İÇİN)
+    if (timeSinceUpdate > 60000) {
         statusDot.className = 'status-dot offline';
         statusText.innerText = '🔴 Elektrik Kesildi';
         powerAlert.classList.add('show');
+        document.getElementById('powerAlertTime').innerText = minutesSinceUpdate + ' dakika';
     } 
     // NORMAL
     else {
@@ -400,7 +370,6 @@ function updateConnectionStatus() {
     
     lastUpdateText.innerText = 'Son güncelleme: ' + timeAgo(lastOverallUpdate);
 }
-
 // Sıcaklık durumunu kontrol et
 function checkStatus(temp, type, isConnected) {
     if (!isConnected) return { class: 'offline', text: '⚠️ Bağlantı Yok' };
@@ -468,6 +437,8 @@ firebase.database().ref("devices/kitchen/fridge").on("value", function(snapshot)
         lastOverallUpdate = new Date();
         console.log("✅ lastOverallUpdate güncellendi:", lastOverallUpdate);
     }
+    // Web timestamp'i Firebase'e yaz
+    firebase.database().ref("devices/kitchen/lastUpdate").set(Date.now());
 });
 
 // Freezer listener'ına ekle
@@ -485,26 +456,8 @@ firebase.database().ref("devices/kitchen/freezer").on("value", function(snapshot
         // SON GÜNCELLEMEYİ KAYDET
         lastOverallUpdate = new Date();
     }
-});
-
-// Elektrik kesintisi - SON ÇÖZÜM
-firebase.database().ref("devices/kitchen/lastUpdate").on("value", function(snapshot) {
-    const lastUpdate = snapshot.val();
-    if (lastUpdate) {
-        const lastUpdateTime = parseInt(lastUpdate) * 1000;
-        const diff = Date.now() - lastUpdateTime;
-        
-        if (diff > 120000) { // 2 dakika
-            document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
-            document.getElementById('powerAlert').classList.add('show');
-            document.getElementById('powerAlertTime').innerText = timeAgo(new Date(lastUpdateTime));
-        } else {
-            document.getElementById('statusText').innerText = '🟢 Bağlı';
-            document.getElementById('powerAlert').classList.remove('show');
-        }
-        
-        document.getElementById('lastUpdateText').innerText = 'Son güncelleme: ' + timeAgo(new Date(lastUpdateTime));
-    }
+    // Web timestamp'i Firebase'e yaz
+    firebase.database().ref("devices/kitchen/lastUpdate").set(Date.now());
 });
 
 // ============================================
@@ -999,24 +952,6 @@ window.addEventListener('load', function() {
             showTempAlert('🔴 Firebase bağlantısı kesildi', 'danger');
         }
     });
-
-    // Her 10 saniyede bir elektrik kesintisi kontrolü
  
-setInterval(function() {
-    if (lastOverallUpdate) {
-        const diff = Date.now() - lastOverallUpdate.getTime();
-        
-        if (diff > 180000) { // 3 dakika
-            document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
-            document.getElementById('powerAlert').classList.add('show');
-            const minutes = Math.floor(diff / 60000);
-            document.getElementById('powerAlertTime').innerText = minutes + ' dakika';
-        } else {
-            document.getElementById('statusText').innerText = '🟢 Bağlı';
-            document.getElementById('powerAlert').classList.remove('show');
-        }
-        
-        document.getElementById('lastUpdateText').innerText = 'Son güncelleme: ' + timeAgo(lastOverallUpdate);
-    }
-}, 10000);
-});
+// Her 10 saniyede bir elektrik kesintisi kontrolü
+setInterval(updateConnectionStatus, 5000);
