@@ -424,6 +424,15 @@ function updateConnectionStatus() {
     checkPowerOutage();
 }
 
+// Son güncelleme zamanını dinle
+firebase.database().ref("lastUpdate").on("value", function(snapshot) {
+    const lastUpdate = snapshot.val();
+    if (lastUpdate) {
+        lastOverallUpdate = new Date(parseInt(lastUpdate));
+        updateConnectionStatus();
+    }
+});
+
 // Sıcaklık durumunu kontrol et
 function checkStatus(temp, type, isConnected) {
     if (!isConnected) return { class: 'offline', text: '⚠️ Bağlantı Yok' };
