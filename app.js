@@ -478,21 +478,23 @@ firebase.database().ref("freezer").on("value", function(snapshot) {
 });
 
 // Elektrik kesintisi - SON ÇÖZÜM
-// Elektrik kesintisi - BASİT
 firebase.database().ref("lastUpdate").on("value", function(snapshot) {
     const lastUpdate = snapshot.val();
     if (lastUpdate) {
-        const diff = Date.now() - parseInt(lastUpdate);
+        // Arduino saniye cinsinden gönderiyor, biz milisaniyeye çeviriyoruz
+        const lastUpdateTime = parseInt(lastUpdate) * 1000;
+        const diff = Date.now() - lastUpdateTime;
         
         if (diff > 120000) { // 2 dakika
             document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
             document.getElementById('powerAlert').classList.add('show');
+            document.getElementById('powerAlertTime').innerText = timeAgo(new Date(lastUpdateTime));
         } else {
             document.getElementById('statusText').innerText = '🟢 Bağlı';
             document.getElementById('powerAlert').classList.remove('show');
         }
         
-       document.getElementById('lastUpdateText').innerText = 'Son güncelleme: ' + timeAgo(new Date(parseInt(lastUpdate)));
+        document.getElementById('lastUpdateText').innerText = 'Son güncelleme: ' + timeAgo(new Date(lastUpdateTime));
     }
 });
 
