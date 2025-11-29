@@ -452,44 +452,42 @@ function updateDisplay(value, type) {
 // FIREBASE LISTENERS (GÜNCELLENDİ)
 // ============================================
 
+// Firebase Listeners - BASİT ve GÜVENLİ
 firebase.database().ref("fridge").on("value", function(snapshot) {
     const value = snapshot.val();
-    console.log("🔥 YENİ Fridge verisi:", value);
-    
     if (value !== null) {
+        console.log("🧊 Fridge:", value);
         document.getElementById('fridge').textContent = value.toFixed(1) + ' °C';
-        document.getElementById('fridge-time').textContent = formatTime(new Date());
-        
-        const status = checkStatus(value, 'fridge', true);
-        document.getElementById('fridge-status').className = 'sensor-status ' + status.class;
-        document.getElementById('fridge-status').innerText = status.text;
-        
-        // Grafiği güncelle
-        updateChartWithNewData(value, parseFloat(document.getElementById('freezer').textContent) || value);
+        document.getElementById('fridge-time').textContent = new Date().toLocaleTimeString();
     }
-}, function(error) {
-    console.error("❌ Fridge veri hatası:", error);
 });
 
 firebase.database().ref("freezer").on("value", function(snapshot) {
     const value = snapshot.val();
-    console.log("🔥 YENİ Freezer verisi:", value);
-    
     if (value !== null) {
+        console.log("❄️ Freezer:", value);
         document.getElementById('freezer').textContent = value.toFixed(1) + ' °C';
-        document.getElementById('freezer-time').textContent = formatTime(new Date());
-        
-        const status = checkStatus(value, 'freezer', true);
-        document.getElementById('freezer-status').className = 'sensor-status ' + status.class;
-        document.getElementById('freezer-status').innerText = status.text;
-        
-        // Grafiği güncelle
-        updateChartWithNewData(parseFloat(document.getElementById('fridge').textContent) || value, value);
+        document.getElementById('freezer-time').textContent = new Date().toLocaleTimeString();
     }
-}, function(error) {
-    console.error("❌ Freezer veri hatası:", error);
 });
 
+
+// Elektrik kesintisi - BASİT
+firebase.database().ref("lastUpdate").on("value", function(snapshot) {
+    const lastUpdate = snapshot.val();
+    if (lastUpdate) {
+        const now = Date.now();
+        const diff = now - parseInt(lastUpdate);
+        
+        if (diff > 120000) { // 2 dakika
+            document.getElementById('statusText').innerText = '🔴 Elektrik Kesildi';
+            document.getElementById('powerAlert').classList.add('show');
+        } else {
+            document.getElementById('statusText').innerText = '🟢 Bağlı';
+            document.getElementById('powerAlert').classList.remove('show');
+        }
+    }
+});
 
 // ============================================
 // YARDIMCI FONKSİYONLAR
