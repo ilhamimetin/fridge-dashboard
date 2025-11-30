@@ -1,4 +1,4 @@
-// Firebase Config (Aynı)
+// Firebase Config (Aynı) // İstediğim Güzel Çalışma
 var firebaseConfig = {
     apiKey: "AIzaSyBhMDR_0dLivEYWqbSte0OnSMlciB8aUuA",
     authDomain: "fridgemonitor-76775.firebaseapp.com",
