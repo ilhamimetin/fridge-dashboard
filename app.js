@@ -946,10 +946,8 @@ window.addEventListener('load', function() {
     firebase.database().ref('.info/connected').on('value', (snapshot) => {
         if (snapshot.val() === true) {
             console.log('✅ Firebase bağlantısı aktif');
-            showTempAlert('🔥 Firebase bağlantısı kuruldu', 'success');
         } else {
             console.log('❌ Firebase bağlantısı kesildi');
-            showTempAlert('🔴 Firebase bağlantısı kesildi', 'danger');
         }
     });
 });  
