@@ -856,20 +856,20 @@ function saveOutage(startTime, endTime) {
     });
 }
 
-function testTimestamps() {
-    const today = new Date();
-    const last60Days = new Date(today);
-    last60Days.setDate(last60Days.getDate() - 60);
-    console.log('last60Days timestamp:', last60Days.getTime());
+// function testTimestamps() {
+//     const today = new Date();
+//     const last60Days = new Date(today);
+//     last60Days.setDate(last60Days.getDate() - 60);
+//     console.log('last60Days timestamp:', last60Days.getTime());
 
-    const outagesRef = firebase.database().ref('devices/kitchen/outages');
+//     const outagesRef = firebase.database().ref('devices/kitchen/outages');
 
-    outagesRef.once('value').then(snapshot => {
-        snapshot.forEach(child => {
-            console.log(child.key, child.val().start);
-        });
-    });
-}
+//     outagesRef.once('value').then(snapshot => {
+//         snapshot.forEach(child => {
+//             console.log(child.key, child.val().start);
+//         });
+//     });
+// }
 
 
 // Kesinti geçmişini yükle (60 gün) — OPTİMİZE EDİLMİŞ SÜRÜM
@@ -881,7 +881,7 @@ function loadOutageHistory() {
     const outagesRef = firebase.database()
         .ref('devices/kitchen/outages')
         .orderByChild('start')
-        // .startAt(last60Days.getTime()); // opsiyonel, tüm kayıtları görmek için kaldır
+        .startAt(last60Days.getTime()); // opsiyonel, tüm kayıtları görmek için kaldır
 
     outagesRef.on('value', snapshot => {
         const outages = [];
