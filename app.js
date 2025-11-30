@@ -521,22 +521,6 @@ function refreshData() {
     location.reload();
 }
 
-// Uygulama başlatma
-window.addEventListener('load', function() {
-    initTheme();   
-    loadDailyStats();
-    loadWeeklySummary();
-    loadOutageHistory();
-    
-    // Bildirim izni iste
-    setTimeout(() => {
-        requestNotificationPermission();
-    }, 3000);
-});
-
-// Kalan fonksiyonlar (initTheme, toggleTheme, notification fonksiyonları) aynı kalacak
-// ...
-
 // ============================================
 // TEMA ve ARAYÜZ FONKSİYONLARI
 // ============================================
