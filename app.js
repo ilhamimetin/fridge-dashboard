@@ -382,36 +382,6 @@ function checkStatus(temp, type, isConnected) {
     }
 }
 
-// Ekranı güncelle
-function updateDisplay(value, type) {
-    const now = new Date();
-    const tempEl = document.getElementById(type);
-    const timeEl = document.getElementById(type + '-time');
-    const statusEl = document.getElementById(type + '-status');
-    
-    tempEl.innerText = value.toFixed(1) + ' °C';
-    timeEl.innerText = formatTime(now);
-    
-    const status = checkStatus(value, type, true);
-    statusEl.className = 'sensor-status ' + status.class;
-    statusEl.innerText = status.text;
-    
-    if (type === 'fridge') lastFridgeUpdate = now;
-    else lastFreezerUpdate = now;
-    
-    lastOverallUpdate = now;
-    
-    // İstatistik kaydet ve grafiği güncelle
-    saveStats(value, type);
-    updateChartWithNewData(
-        type === 'fridge' ? value : temperatureChart.data.datasets[0].data[temperatureChart.data.datasets[0].data.length - 1] || value,
-        type === 'freezer' ? value : temperatureChart.data.datasets[1].data[temperatureChart.data.datasets[1].data.length - 1] || value
-    );
-    
-    checkTemperatureAlert(value, type);
-    updateConnectionStatus();
-}
-
 // ============================================
 // FIREBASE LISTENERS (GÜNCELLENDİ)
 // ============================================
@@ -426,21 +396,16 @@ firebase.database().ref("devices/kitchen/fridge").on("value", function(snapshot)
         
         const status = checkStatus(value, 'fridge', true);
         document.getElementById('fridge-status').className = 'sensor-status ' + status.class;
-        document.getElementById('fridge-status').innerText = status.text;      
-    }
-});
-// lastUpdate timestamp'ini dinle
-firebase.database().ref("devices/kitchen/lastUpdate").on("value", function(snapshot) {
-    const timestamp = snapshot.val();
-    
-    if (timestamp !== null) {
-        lastOverallUpdate = new Date(timestamp);
-        console.log("⏰ Firebase lastUpdate:", lastOverallUpdate);
-        updateConnectionStatus();
+        document.getElementById('fridge-status').innerText = status.text;
+        
+        saveStats(value, 'fridge');
+        
+        // ✅ GRAFİĞİ GÜNCELLE
+        const freezerTemp = temperatureChart?.data?.datasets[1]?.data?.slice(-1)[0] || 0;
+        updateChartWithNewData(value, freezerTemp);
     }
 });
 
-// Freezer listener'ına ekle
 firebase.database().ref("devices/kitchen/freezer").on("value", function(snapshot) {
     const value = snapshot.val();
     if (value !== null) {
@@ -450,7 +415,13 @@ firebase.database().ref("devices/kitchen/freezer").on("value", function(snapshot
         
         const status = checkStatus(value, 'freezer', true);
         document.getElementById('freezer-status').className = 'sensor-status ' + status.class;
-        document.getElementById('freezer-status').innerText = status.text;       
+        document.getElementById('freezer-status').innerText = status.text;
+        
+        saveStats(value, 'freezer');
+        
+        // ✅ GRAFİĞİ GÜNCELLE
+        const fridgeTemp = temperatureChart?.data?.datasets[0]?.data?.slice(-1)[0] || 0;
+        updateChartWithNewData(fridgeTemp, value);
     }
 });
 // ============================================
