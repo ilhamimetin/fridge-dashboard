@@ -876,23 +876,21 @@ function testTimestamps() {
 function loadOutageHistory() {
     const today = new Date();
     const last60Days = new Date(today);
-    last60Days.setDate(last60Days.getDate() - 60); // son 60 gün
+    last60Days.setDate(last60Days.getDate() - 60);
 
     const outagesRef = firebase.database()
         .ref('devices/kitchen/outages')
         .orderByChild('start')
-        .startAt(last60Days.getTime());
+        // .startAt(last60Days.getTime()); // opsiyonel, tüm kayıtları görmek için kaldır
 
-    // 🔥 Tek listener: hem ilk yükleme hem canlı güncelleme
     outagesRef.on('value', snapshot => {
         const outages = [];
         snapshot.forEach(child => outages.push(child.val()));
-        
-        outages.sort((a, b) => b.start - a.start); // yeniden eskiye
-        
+        outages.sort((a, b) => b.start - a.start);
         displayOutageHistory(outages);
     });
 }
+
 
 
 
