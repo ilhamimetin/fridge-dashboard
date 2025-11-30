@@ -163,23 +163,25 @@ function loadChartData() {
 }
 
 // Gerçek veri ile grafiği başlat veri yoksa mesaj yaz
-function initializeChartWithSampleData() {   
+function initializeChartWithSampleData() {
+    // Grafik boş başlasın, mesaj canvas DIŞINDA olsun
+    
     if (temperatureChart) {
         temperatureChart.data.labels = [];
         temperatureChart.data.datasets[0].data = [];
         temperatureChart.data.datasets[1].data = [];
         temperatureChart.update('none');
     }
-    
-    // Grafik alanına mesaj ekle
-    document.querySelector('.chart-container').innerHTML = 
-        '<canvas id="temperatureChart"></canvas>' +
-        '<p style="text-align:center; color: var(--text-secondary); padding: 20px;">📊 Veriler toplanıyor... İlk grafikler 1 saat içinde oluşacak.</p>';
 }
-
 // Yeni veri geldiğinde grafiği güncelle
 function updateChartWithNewData(fridgeTemp, freezerTemp) {
     if (!temperatureChart) return;
+    
+    // Mesajı gizle (ilk veri geldiğinde)
+    const msg = document.getElementById('chartMessage');
+    if (msg && temperatureChart.data.labels.length === 0) {
+        msg.style.display = 'none';
+    }
     
     const now = new Date();
     const currentTime = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
