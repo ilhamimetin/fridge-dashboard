@@ -135,12 +135,19 @@
 <!-- Elektrik Kesintisi Geçmişi -->
 <div class="card full-width">
     <h2>⚡ Elektrik Kesintisi Geçmişi (Son 7 Gün)</h2>
-    <div id="outageHistory">
+    <div id="outage-history">
         <p style="color: var(--text-secondary); text-align: center; padding: 20px;">
             Henüz kesinti kaydı yok
         </p>
     </div>
 </div>
+
+<!-- Toplam Kesinti -->
+<div class="card full-width">
+    <div>Toplam Kesinti: <span id="total-outages">0 kesinti</span></div>
+    <div>Toplam Kesinti Süresi: <span id="total-outage-duration">0 dk</span></div>
+</div>
+
 
 <!-- Haftalık Özet -->
 <div class="card full-width weekly-summary">
@@ -184,6 +191,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
