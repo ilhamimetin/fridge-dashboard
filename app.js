@@ -900,8 +900,8 @@ function displayOutageHistory(outages) {
     
     outages.forEach(outage => {
         const startDate = new Date(outage.start);
-        const durationMin = Math.floor(outage.duration / 60000);
-        totalDuration += outage.duration;
+        const durationMin = outage.duration ? Math.floor(outage.duration / 60000) : 0;
+        if (outage.duration) totalDuration += outage.duration;
         
         html += `
             <div class="outage-item">
