@@ -165,7 +165,7 @@ function loadChartData() {
             const freezerData = freezerSnapshot.val() || {};
             
             // Zamanları sırala
-            const times = Array.from(new Set([...Object.keys(fridgeData), ...Object.keys(freezerData)])).sort();
+            const times = Array.from(new Set([...Object.keys(fridgeData), ...Object.keys(freezerData)])).sort() .slice(-48);
             
             // Grafiğe yükle
             times.forEach(time => {
