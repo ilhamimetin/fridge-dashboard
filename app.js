@@ -856,43 +856,32 @@ function saveOutage(startTime, endTime) {
     });
 }
 
-function testTimestamps() {
-    const today = new Date();
-    const last60Days = new Date(today);
-    last60Days.setDate(last60Days.getDate() - 60);
-    console.log('last60Days timestamp:', last60Days.getTime());
-
-    const outagesRef = firebase.database().ref('devices/kitchen/outages');
-
-    outagesRef.once('value').then(snapshot => {
-        snapshot.forEach(child => {
-            console.log(child.key, child.val().start);
-        });
-    });
-}
-
-
-// Kesinti geçmişini yükle (60 gün) — OPTİMİZE EDİLMİŞ SÜRÜM
+// Kesinti geçmişini yükle
 function loadOutageHistory() {
     const today = new Date();
-    const last60Days = new Date(today);
-    last60Days.setDate(last60Days.getDate() - 60);
-
-    const outagesRef = firebase.database()
-        .ref('devices/kitchen/outages')
+    const last7Days = new Date(today);
+    last7Days.setDate(last7Days.getDate() - 7);
+    
+    firebase.database().ref('devices/kitchen/outages')
         .orderByChild('start')
-        // .startAt(last60Days.getTime()); // opsiyonel, tüm kayıtları görmek için kaldır
-
-    outagesRef.on('value', snapshot => {
-        const outages = [];
-        snapshot.forEach(child => outages.push(child.val()));
-        outages.sort((a, b) => b.start - a.start);
-        displayOutageHistory(outages);
-    });
+        .startAt(last7Days.getTime())
+        .once('value')
+        .then(snapshot => {
+            const outages = [];
+            snapshot.forEach(child => {
+                outages.push(child.val());
+            });
+            
+            outages.sort((a, b) => b.start - a.start); // Yeniden eskiye
+            
+            displayOutageHistory(outages);
+        })
+        .catch(error => {
+            console.error('Kesinti geçmişi yükleme hatası:', error);
+            document.getElementById('outageHistory').innerHTML = 
+                '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">Veri yüklenirken hata oluştu</p>';
+        });
 }
-
-
-
 
 // Kesinti geçmişini göster
 function displayOutageHistory(outages) {
@@ -911,8 +900,8 @@ function displayOutageHistory(outages) {
     
     outages.forEach(outage => {
         const startDate = new Date(outage.start);
-        const durationMin = outage.duration ? Math.floor(outage.duration / 60000) : 0;
-        if (outage.duration) totalDuration += outage.duration;
+        const durationMin = Math.floor(outage.duration / 60000);
+        totalDuration += outage.duration;
         
         html += `
             <div class="outage-item">
