@@ -857,31 +857,28 @@ function saveOutage(startTime, endTime) {
 }
 
 // Kesinti geçmişini yükle
+// Kesinti geçmişini yükle (7 gün) — OPTİMİZE EDİLMİŞ SÜRÜM
 function loadOutageHistory() {
     const today = new Date();
     const last7Days = new Date(today);
     last7Days.setDate(last7Days.getDate() - 7);
-    
-    firebase.database().ref('devices/kitchen/outages')
+
+    const outagesRef = firebase.database()
+        .ref('devices/kitchen/outages')
         .orderByChild('start')
-        .startAt(last7Days.getTime())
-        .once('value')
-        .then(snapshot => {
-            const outages = [];
-            snapshot.forEach(child => {
-                outages.push(child.val());
-            });
-            
-            outages.sort((a, b) => b.start - a.start); // Yeniden eskiye
-            
-            displayOutageHistory(outages);
-        })
-        .catch(error => {
-            console.error('Kesinti geçmişi yükleme hatası:', error);
-            document.getElementById('outageHistory').innerHTML = 
-                '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">Veri yüklenirken hata oluştu</p>';
-        });
+        .startAt(last7Days.getTime());
+
+    // 🔥 TEK LİSTENER — hem ilk yükleme hem canlı güncelleme
+    outagesRef.on('value', snapshot => {
+        const outages = [];
+        snapshot.forEach(child => outages.push(child.val()));
+        
+        outages.sort((a, b) => b.start - a.start); // Yeniden eskiye
+        
+        displayOutageHistory(outages);
+    });
 }
+
 
 // Kesinti geçmişini göster
 function displayOutageHistory(outages) {
