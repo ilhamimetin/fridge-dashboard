@@ -1,203 +1,124 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <title>Buzdolabı Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="Buzdolabı sıcaklık takip sistemi">
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- CSS -->
-    <link rel="stylesheet" href="style.css">
-    
-    <!-- Firebase -->
+    <meta name="description" content="Buzdolabı sıcaklık takip sistemi"> <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json"> <!-- CSS -->
+    <link rel="stylesheet" href="style.css"> <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
-    <!-- Chart.js -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script> <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 </head>
-<body>
-    <!-- Dark Mode Toggle -->
-    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
 
+<body> <!-- Dark Mode Toggle --> <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
     <!-- PWA Install Prompt -->
-    <div class="install-prompt" id="installPrompt">
-        <span style="color: var(--text-primary);">📱 Ana ekrana ekle ve uygulama gibi kullan!</span>
-        <button id="installBtn">Kur</button>
-        <button class="close-btn" id="closeInstallBtn">×</button>
-    </div>
-
-    <div class="container">
-        <!-- Bağlantı Durum Çubuğu -->
+    <div class="install-prompt" id="installPrompt"> <span style="color: var(--text-primary);">📱 Ana ekrana ekle ve
+            uygulama gibi kullan!</span> <button id="installBtn">Kur</button> <button class="close-btn"
+            id="closeInstallBtn">×</button> </div>
+    <div class="container"> <!-- Bağlantı Durum Çubuğu -->
         <div class="status-bar">
             <div class="connection-status">
                 <div class="status-indicator">
-                    <div class="status-dot online" id="statusDot"></div>
-                    <span id="statusText">Bağlantı Kuruluyor...</span>
+                    <div class="status-dot online" id="statusDot"></div> <span id="statusText">Bağlantı
+                        Kuruluyor...</span>
                 </div>
                 <div class="last-update" id="lastUpdateText">Son güncelleme: --</div>
-            </div>
-            
-            <!-- Elektrik Kesintisi Uyarısı -->
-            <div class="alert danger" id="powerAlert">
-                <strong>⚠️ Elektrik Kesintisi Tespit Edildi!</strong><br>
-                Son veri: <span id="powerAlertTime">--</span> önce alındı.
-            </div>
-            
-            <!-- Bağlantı Yeniden Kuruldu -->
-            <div class="alert success" id="reconnectAlert">
-                <strong>✓ Bağlantı Yeniden Kuruldu!</strong><br>
-                Elektrik kesintisi süresi: <span id="outageDuration">--</span>
-            </div>
-        </div>
-
-        <!-- Anlık Sıcaklıklar -->
-        <div class="grid">
-            <!-- Normal Dolap -->
+            </div> <!-- Elektrik Kesintisi Uyarısı -->
+            <div class="alert danger" id="powerAlert"> <strong>⚠️ Elektrik Kesintisi Tespit Edildi!</strong><br> Son
+                veri: <span id="powerAlertTime">--</span> önce alındı. </div> <!-- Bağlantı Yeniden Kuruldu -->
+            <div class="alert success" id="reconnectAlert"> <strong>✓ Bağlantı Yeniden Kuruldu!</strong><br> Elektrik
+                kesintisi süresi: <span id="outageDuration">--</span> </div>
+        </div> <!-- Anlık Sıcaklıklar -->
+        <div class="grid"> <!-- Normal Dolap -->
             <div class="card">
                 <h1>🧊 Normal Dolap</h1>
                 <div class="temp" id="fridge">--</div>
                 <div class="timestamp" id="fridge-time">Bekleniyor...</div>
                 <div class="sensor-status ok" id="fridge-status">Veri Bekleniyor</div>
-            </div>
-
-            <!-- Dondurucu -->
+            </div> <!-- Dondurucu -->
             <div class="card">
                 <h1>❄️ Dondurucu</h1>
                 <div class="temp" id="freezer">--</div>
                 <div class="timestamp" id="freezer-time">Bekleniyor...</div>
                 <div class="sensor-status ok" id="freezer-status">Veri Bekleniyor</div>
             </div>
-        </div>
-
-        <!-- 24 Saatlik Grafik -->
+        </div> <!-- 24 Saatlik Grafik -->
         <div class="card full-width">
             <h2>📊 Son 24 Saat - Sıcaklık Değişimi</h2>
-            <div class="chart-container">
-                <canvas id="temperatureChart"></canvas>
+            <div class="chart-container"> <canvas id="temperatureChart"></canvas> </div>
+            <p id="chartMessage" style="text-align:center; color: var(--text-secondary); padding: 20px;"> 📊 Veriler
+                toplanıyor... İlk grafikler 1 saat içinde oluşacak. </p>
+        </div> <!-- İSTATİSTİKLER BÖLÜMÜ (Grafikten sonra eklenecek) --> <!-- Günlük İstatistikler -->
+        <div class="stats-grid"> <!-- Normal Dolap İstatistikleri -->
+            <div class="card stat-card" id="fridge-stats">
+                <h3>🧊 Normal Dolap - Bugün</h3>
+                <div class="stat-item"> <span class="stat-label">📉 Minimum:</span> <span class="stat-value"
+                        id="fridge-min">--</span> </div>
+                <div class="stat-item"> <span class="stat-label">📈 Maksimum:</span> <span class="stat-value"
+                        id="fridge-max">--</span> </div>
+                <div class="stat-item"> <span class="stat-label">📊 Ortalama:</span> <span class="stat-value"
+                        id="fridge-avg">--</span> </div>
+                <div class="stat-item"> <span class="stat-label">🔢 Ölçüm Sayısı:</span> <span class="stat-value"
+                        id="fridge-count">--</span> </div>
+            </div> <!-- Dondurucu İstatistikleri -->
+            <div class="card stat-card" id="freezer-stats">
+                <h3>❄️ Dondurucu - Bugün</h3>
+                <div class="stat-item"> <span class="stat-label">📉 Minimum:</span> <span class="stat-value"
+                        id="freezer-min">--</span> </div>
+                <div class="stat-item"> <span class="stat-label">📈 Maksimum:</span> <span class="stat-value"
+                        id="freezer-max">--</span> </div>
+                <div class="stat-item"> <span class="stat-label">📊 Ortalama:</span> <span class="stat-value"
+                        id="freezer-avg">--</span> </div>
+                <div class="stat-item"> <span class="stat-label">🔢 Ölçüm Sayısı:</span> <span class="stat-value"
+                        id="freezer-count">--</span> </div>
             </div>
-            <p id="chartMessage" style="text-align:center; color: var(--text-secondary); padding: 20px;">
-                📊 Veriler toplanıyor... İlk grafikler 1 saat içinde oluşacak.
-            </p>
-        </div>
-
-        <!-- İSTATİSTİKLER BÖLÜMÜ (Grafikten sonra eklenecek) -->
-
-<!-- Günlük İstatistikler -->
-<div class="stats-grid">
-    <!-- Normal Dolap İstatistikleri -->
-    <div class="card stat-card" id="fridge-stats">
-        <h3>🧊 Normal Dolap - Bugün</h3>
-        <div class="stat-item">
-            <span class="stat-label">📉 Minimum:</span>
-            <span class="stat-value" id="fridge-min">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">📈 Maksimum:</span>
-            <span class="stat-value" id="fridge-max">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">📊 Ortalama:</span>
-            <span class="stat-value" id="fridge-avg">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">🔢 Ölçüm Sayısı:</span>
-            <span class="stat-value" id="fridge-count">--</span>
-        </div>
-    </div>
-
-    <!-- Dondurucu İstatistikleri -->
-    <div class="card stat-card" id="freezer-stats">
-        <h3>❄️ Dondurucu - Bugün</h3>
-        <div class="stat-item">
-            <span class="stat-label">📉 Minimum:</span>
-            <span class="stat-value" id="freezer-min">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">📈 Maksimum:</span>
-            <span class="stat-value" id="freezer-max">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">📊 Ortalama:</span>
-            <span class="stat-value" id="freezer-avg">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">🔢 Ölçüm Sayısı:</span>
-            <span class="stat-value" id="freezer-count">--</span>
-        </div>
-    </div>
-</div>
-
-<!-- Elektrik Kesintisi Geçmişi -->
-<div class="card full-width">
-    <h2>⚡ Elektrik Kesintisi Geçmişi (Son 7 Gün)</h2>
-    <div id="outage-history">
-        <p style="color: var(--text-secondary); text-align: center; padding: 20px;">
-            Henüz kesinti kaydı yok
-        </p>
-    </div>
-</div>
-
-<!-- Toplam Kesinti -->
-<div class="card full-width">
-    <div>Toplam Kesinti: <span id="total-outages">0 kesinti</span></div>
-    <div>Toplam Kesinti Süresi: <span id="total-outage-duration">0 dk</span></div>
-</div>
-
-
-<!-- Haftalık Özet -->
-<div class="card full-width weekly-summary">
-    <h2>📅 Haftalık Özet (Son 7 Gün)</h2>
-    <div class="summary-grid">
-        <div class="summary-item">
-            <div class="summary-icon">🧊</div>
-            <div class="summary-content">
-                <div class="summary-label">Normal Dolap Ort.</div>
-                <div class="summary-value" id="weekly-fridge-avg">--</div>
+        </div> <!-- Elektrik Kesintisi Geçmişi -->
+        <div class="card full-width">
+            <h2>⚡ Elektrik Kesintisi Geçmişi (Son 7 Gün)</h2>
+            <div id="outageHistory">
+                <p style="color: var(--text-secondary); text-align: center; padding: 20px;"> Henüz kesinti kaydı yok
+                </p>
             </div>
-        </div>
-        <div class="summary-item">
-            <div class="summary-icon">❄️</div>
-            <div class="summary-content">
-                <div class="summary-label">Dondurucu Ort.</div>
-                <div class="summary-value" id="weekly-freezer-avg">--</div>
+        </div> <!-- Haftalık Özet -->
+        <div class="card full-width weekly-summary">
+            <h2>📅 Haftalık Özet (Son 7 Gün)</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-icon">🧊</div>
+                    <div class="summary-content">
+                        <div class="summary-label">Normal Dolap Ort.</div>
+                        <div class="summary-value" id="weekly-fridge-avg">--</div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">❄️</div>
+                    <div class="summary-content">
+                        <div class="summary-label">Dondurucu Ort.</div>
+                        <div class="summary-value" id="weekly-freezer-avg">--</div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">⚡</div>
+                    <div class="summary-content">
+                        <div class="summary-label">Toplam Kesinti</div>
+                        <div class="summary-value" id="weekly-outage-count">--</div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">⏱️</div>
+                    <div class="summary-content">
+                        <div class="summary-label">Toplam Kesinti Süresi</div>
+                        <div class="summary-value" id="weekly-outage-duration">--</div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="summary-item">
-            <div class="summary-icon">⚡</div>
-            <div class="summary-content">
-                <div class="summary-label">Toplam Kesinti</div>
-                <div class="summary-value" id="weekly-outage-count">--</div>
-            </div>
-        </div>
-        <div class="summary-item">
-            <div class="summary-icon">⏱️</div>
-            <div class="summary-content">
-                <div class="summary-label">Toplam Kesinti Süresi</div>
-                <div class="summary-value" id="weekly-outage-duration">--</div>
-            </div>
-        </div>
-    </div>
-</div>
-        <!-- Yenile Butonu -->
-        <button class="refresh-btn" onclick="refreshData()">🔄 Verileri Yenile</button>
-    </div>
-
-    <!-- JavaScript -->
+        </div> <!-- Yenile Butonu --> <button class="refresh-btn" onclick="refreshData()">🔄 Verileri Yenile</button>
+    </div> <!-- JavaScript -->
     <script src="app.js"></script>
 </body>
+
 </html>
-
-
-
-
-
-
-
-
-
-
