@@ -891,9 +891,6 @@ function loadOutageHistory() {
     });
 }
 
-
-
-
 // Kesinti geçmişini göster
 function displayOutageHistory(outages) {
     if (outages.length === 0) {
@@ -911,9 +908,12 @@ function displayOutageHistory(outages) {
     
     outages.forEach(outage => {
         const startDate = new Date(outage.start);
-        const durationMin = outage.duration ? Math.floor(outage.duration / 60000) : 0;
-        if (outage.duration) totalDuration += outage.duration;
-        
+
+        // 🔹 Eğer duration yoksa end - start ile hesapla
+        const durationMs = outage.duration ? outage.duration : (outage.end ? outage.end - outage.start : 0);
+        const durationMin = Math.floor(durationMs / 60000);
+        totalDuration += durationMs;
+
         html += `
             <div class="outage-item">
                 <div class="outage-date">
@@ -931,8 +931,12 @@ function displayOutageHistory(outages) {
             </div>
         `;
     });
-    
+
     document.getElementById('outageHistory').innerHTML = html;
+    document.getElementById('weekly-outage-count').textContent = `${outageCount} kesinti`;
+    document.getElementById('weekly-outage-duration').textContent = `${Math.floor(totalDuration / 60000)} dk`;
+}
+
     
     // Haftalık özet
     document.getElementById('weekly-outage-count').textContent = outageCount + ' kesinti';
