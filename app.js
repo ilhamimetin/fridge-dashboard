@@ -357,7 +357,7 @@ function updateConnectionStatus() {
         statusText.innerText = '🔴 Elektrik Kesildi';
         powerAlert.classList.add('show');
         document.getElementById('powerAlertTime').innerText = minutesSinceUpdate + ' dakika';
-
+        
         // ✅ KESİNTİ BAŞLANGICINI KAYDET
         if (!offlineStartTime) {
             offlineStartTime = lastOverallUpdate.getTime();
@@ -370,7 +370,7 @@ function updateConnectionStatus() {
         statusDot.className = 'status-dot online';
         statusText.innerText = '🟢 Bağlı';
         powerAlert.classList.remove('show');
-    
+        
         // ✅ KESİNTİ BİTTİ - KAYDET
         if (wasOffline && offlineStartTime) {
             const outageEnd = Date.now();
