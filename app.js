@@ -184,18 +184,6 @@ function loadChartData() {
         });
     });
 }
-
-// Gerçek veri ile grafiği başlat veri yoksa mesaj yaz
-function initializeChartWithSampleData() {
-    // Grafik boş başlasın, mesaj canvas DIŞINDA olsun
-    
-    if (temperatureChart) {
-        temperatureChart.data.labels = [];
-        temperatureChart.data.datasets[0].data = [];
-        temperatureChart.data.datasets[1].data = [];
-        temperatureChart.update('none');
-    }
-}
 // Yeni veri geldiğinde grafiği güncelle
 function updateChartWithNewData(fridgeTemp, freezerTemp) {
     if (!temperatureChart) return;
