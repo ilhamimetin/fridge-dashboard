@@ -391,6 +391,9 @@ function updateConnectionStatus() {
             
             // Firebase'e kaydet
             saveOutage(offlineStartTime, outageEnd);
+
+            // Kesinti geçmişini yeniden yükle
+            loadOutageHistory();  // ← BU SATIRI EKLE!
             
             // Değişkenleri sıfırla
             offlineStartTime = null;
