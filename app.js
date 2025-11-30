@@ -438,8 +438,6 @@ firebase.database().ref("devices/kitchen/fridge").on("value", function(snapshot)
     const value = snapshot.val();
     if (value !== null) {
 
-        lastOverallUpdate = new Date();
-
         console.log("🧊 Fridge:", value);
         document.getElementById('fridge').textContent = value.toFixed(1) + ' °C';
         document.getElementById('fridge-time').textContent = new Date().toLocaleTimeString();
@@ -460,8 +458,6 @@ firebase.database().ref("devices/kitchen/freezer").on("value", function(snapshot
     const value = snapshot.val();
     if (value !== null) {
 
-        lastOverallUpdate = new Date();
-
         console.log("❄️ Freezer:", value);
         document.getElementById('freezer').textContent = value.toFixed(1) + ' °C';
         document.getElementById('freezer-time').textContent = new Date().toLocaleTimeString();
@@ -475,6 +471,17 @@ firebase.database().ref("devices/kitchen/freezer").on("value", function(snapshot
         // ✅ GRAFİĞİ GÜNCELLE
         const fridgeTemp = temperatureChart?.data?.datasets[0]?.data?.slice(-1)[0] || 0;
         updateChartWithNewData(fridgeTemp, value);
+    }
+});
+
+// lastUpdate timestamp'ini dinle
+firebase.database().ref("devices/kitchen/lastUpdate").on("value", function(snapshot) {
+    const timestamp = snapshot.val();
+    
+    if (timestamp !== null) {
+        lastOverallUpdate = new Date(timestamp);
+        console.log("⏰ Firebase lastUpdate:", lastOverallUpdate);
+        updateConnectionStatus();
     }
 });
 // ============================================
@@ -836,7 +843,7 @@ function saveOutage(startTime, endTime) {
     
     const timestamp = new Date(startTime).toISOString().replace(/[:.]/g, '-');
     
-    firebase.database().ref(`stats/outages/${timestamp}`).set({
+    firebase.database().ref(`devices/kitchen/outages/${timestamp}`).set({
         start: startTime,
         end: endTime,
         duration: duration,
@@ -855,7 +862,7 @@ function loadOutageHistory() {
     const last7Days = new Date(today);
     last7Days.setDate(last7Days.getDate() - 7);
     
-    firebase.database().ref('stats/outages')
+    firebase.database().ref('devices/kitchen/outages')
         .orderByChild('start')
         .startAt(last7Days.getTime())
         .once('value')
