@@ -357,12 +357,34 @@ function updateConnectionStatus() {
         statusText.innerText = '🔴 Elektrik Kesildi';
         powerAlert.classList.add('show');
         document.getElementById('powerAlertTime').innerText = minutesSinceUpdate + ' dakika';
+
+        // ✅ KESİNTİ BAŞLANGICINI KAYDET
+        if (!offlineStartTime) {
+            offlineStartTime = lastOverallUpdate.getTime();
+            wasOffline = true;
+            console.log('⚡ Kesinti başladı:', new Date(offlineStartTime));
+        }
     } 
-    // NORMAL
+    // NORMAL - Elektrik geldi
     else {
         statusDot.className = 'status-dot online';
         statusText.innerText = '🟢 Bağlı';
         powerAlert.classList.remove('show');
+    
+        // ✅ KESİNTİ BİTTİ - KAYDET
+        if (wasOffline && offlineStartTime) {
+            const outageEnd = Date.now();
+            const outageDuration = outageEnd - offlineStartTime;
+            
+            console.log('✅ Kesinti bitti! Süre:', formatDuration(outageDuration));
+            
+            // Firebase'e kaydet
+            saveOutage(offlineStartTime, outageEnd);
+            
+            // Değişkenleri sıfırla
+            offlineStartTime = null;
+            wasOffline = false;
+        }
     }
     
     lastUpdateText.innerText = 'Son güncelleme: ' + timeAgo(lastOverallUpdate);
