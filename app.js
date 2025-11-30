@@ -5,13 +5,15 @@ var firebaseConfig = {
     databaseURL: "https://fridgemonitor-76775-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "fridgemonitor-76775"
 };
-
 firebase.initializeApp(firebaseConfig);
 
+// Firebase eventleri sıfırla
 firebase.database().ref("devices/kitchen/fridge").off();
 firebase.database().ref("devices/kitchen/freezer").off();
 
+// ==========================
 // Global Variables
+// ==========================
 let lastFridgeUpdate = null;
 let lastFreezerUpdate = null;
 let lastOverallUpdate = null;
@@ -20,6 +22,11 @@ let wasOffline = false;
 let offlineStartTime = null;
 let temperatureChart = null;
 let deferredPrompt = null;
+
+// Global değişkenler elektrik kesintisi için
+let wasPowerOut = false;
+let currentOutageRef = null;
+const devicePath = "devices/kitchen"; // burayı cihaz ismine göre değiştir
 
 // Bildirim değişkenleri
 let notificationPermission = false;
@@ -30,7 +37,25 @@ let lastNotificationTime = {
 };
 const NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 dakika
 
+// ==========================
+// Firebase veri güncellemeleri için fonksiyonlar (örnek)
+// ==========================
 
+// Fridge ve Freezer güncellemeleri
+firebase.database().ref(devicePath + "/fridge").on("value", snapshot => {
+    lastFridgeUpdate = Date.now();
+    // ... diğer DOM / grafik güncellemeleri
+});
+
+firebase.database().ref(devicePath + "/freezer").on("value", snapshot => {
+    lastFreezerUpdate = Date.now();
+    // ... diğer DOM / grafik güncellemeleri
+});
+
+// Genel son güncelleme timestamp
+setInterval(() => {
+    lastOverallUpdate = Date.now();
+}, 1000); // her saniye güncelle
 
 
 
