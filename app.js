@@ -30,11 +30,6 @@ let lastNotificationTime = {
 };
 const NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 dakika
 
-
-
-
-
-
 // ============================================
 // YENİ: GELİŞMİŞ İSTATİSTİK SİSTEMİ
 // ============================================
@@ -362,7 +357,7 @@ function updateConnectionStatus() {
         statusText.innerText = '🔴 Elektrik Kesildi';
         powerAlert.classList.add('show');
         document.getElementById('powerAlertTime').innerText = minutesSinceUpdate + ' dakika';
-        
+
         // ✅ KESİNTİ BAŞLANGICINI KAYDET
         if (!offlineStartTime) {
             offlineStartTime = lastOverallUpdate.getTime();
@@ -375,7 +370,7 @@ function updateConnectionStatus() {
         statusDot.className = 'status-dot online';
         statusText.innerText = '🟢 Bağlı';
         powerAlert.classList.remove('show');
-        
+    
         // ✅ KESİNTİ BİTTİ - KAYDET
         if (wasOffline && offlineStartTime) {
             const outageEnd = Date.now();
@@ -419,9 +414,6 @@ function checkStatus(temp, type, isConnected) {
 firebase.database().ref("devices/kitchen/fridge").on("value", function(snapshot) {
     const value = snapshot.val();
     if (value !== null) {
-
-        lastOverallUpdate = new Date();
-
         console.log("🧊 Fridge:", value);
         document.getElementById('fridge').textContent = value.toFixed(1) + ' °C';
         document.getElementById('fridge-time').textContent = new Date().toLocaleTimeString();
@@ -441,9 +433,6 @@ firebase.database().ref("devices/kitchen/fridge").on("value", function(snapshot)
 firebase.database().ref("devices/kitchen/freezer").on("value", function(snapshot) {
     const value = snapshot.val();
     if (value !== null) {
-
-        lastOverallUpdate = new Date();
-
         console.log("❄️ Freezer:", value);
         document.getElementById('freezer').textContent = value.toFixed(1) + ' °C';
         document.getElementById('freezer-time').textContent = new Date().toLocaleTimeString();
