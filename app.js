@@ -154,12 +154,35 @@ function createRealChart() {
 
 // Firebase'den grafik verilerini yükle
 function loadChartData() {
-    const now = Date.now();
-    const twentyFourHoursAgo = now - (24 * 60 * 60 * 1000);
+    const today = new Date().toISOString().split('T')[0];
     
-    // Firebase'de history node'una ihtiyacımız var
-    // Önce fake data ile çalıştıralım, sonra gerçek veriye geçeriz
-    initializeChartWithSampleData();
+    // Fridge verilerini yükle
+    firebase.database().ref(`stats/hourly/${today}/fridge`).once('value').then(snapshot => {
+        const fridgeData = snapshot.val() || {};
+        
+        // Freezer verilerini yükle
+        return firebase.database().ref(`stats/hourly/${today}/freezer`).once('value').then(freezerSnapshot => {
+            const freezerData = freezerSnapshot.val() || {};
+            
+            // Zamanları sırala
+            const times = Array.from(new Set([...Object.keys(fridgeData), ...Object.keys(freezerData)])).sort();
+            
+            // Grafiğe yükle
+            times.forEach(time => {
+                temperatureChart.data.labels.push(time);
+                temperatureChart.data.datasets[0].data.push(fridgeData[time] || 0);
+                temperatureChart.data.datasets[1].data.push(freezerData[time] || 0);
+            });
+            
+            temperatureChart.update('none');
+            
+            // Mesajı gizle
+            const msg = document.getElementById('chartMessage');
+            if (msg && times.length > 0) {
+                msg.style.display = 'none';
+            }
+        });
+    });
 }
 
 // Gerçek veri ile grafiği başlat veri yoksa mesaj yaz
