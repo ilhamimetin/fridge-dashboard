@@ -1,4 +1,4 @@
-// Firebase Config (Aynı)
+// Firebase Config (Aynı) // İstediğim Güzel Çalışma
 var firebaseConfig = {
     apiKey: "AIzaSyBhMDR_0dLivEYWqbSte0OnSMlciB8aUuA",
     authDomain: "fridgemonitor-76775.firebaseapp.com",
@@ -21,6 +21,11 @@ let offlineStartTime = null;
 let temperatureChart = null;
 let deferredPrompt = null;
 
+// Global değişkenler
+let wasPowerOut = false;
+let currentOutageRef = null;
+const devicePath = "devices/kitchen";  // burayı cihaz ismine göre değiştir
+
 // Bildirim değişkenleri
 let notificationPermission = false;
 let lastNotificationTime = {
@@ -30,6 +35,110 @@ let lastNotificationTime = {
 };
 const NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 dakika
 
+
+
+
+// Elektrik durumu kontrolü
+function checkPowerStatus() {
+    const now = Date.now();
+    const diff = now - lastOverallUpdate;  // lastOverallUpdate zaten app.js’te güncelleniyor
+
+    const isPowerOut = diff > 60000; // 60 saniye veri gelmezse elektrik kesik
+
+    // ELEKTRİK GİTTİ
+    if (isPowerOut && !wasPowerOut) {
+        console.log("⚠️ Elektrik Kesintisi Başladı!");
+
+        currentOutageRef = firebase.database().ref(`${devicePath}/outages`).push({
+            start: Date.now(),
+            end: null
+        });
+
+        firebase.database().ref(`${devicePath}/currentPowerStatus`).set("off");
+
+        wasPowerOut = true;
+    }
+
+    // ELEKTRİK GELDİ
+    if (!isPowerOut && wasPowerOut) {
+        console.log("🟢 Elektrik Geri Geldi!");
+
+        if (currentOutageRef) {
+            currentOutageRef.update({
+                end: Date.now()
+            });
+        }
+
+        firebase.database().ref(`${devicePath}/currentPowerStatus`).set("on");
+
+        wasPowerOut = false;
+    }
+}
+
+// Her 10 saniyede bir çalıştır
+setInterval(checkPowerStatus, 10000);
+
+// 7 günlük kesinti geçmişi yükleme
+function loadOutageHistory() {
+    firebase.database().ref(`${devicePath}/outages`).on("value", snapshot => {
+        const data = snapshot.val() || {};
+        const last7Days = Date.now() - (7 * 24 * 60 * 60 * 1000);
+
+        const outages = Object.values(data).filter(o => o.start >= last7Days);
+
+        const elem = document.getElementById("outage-history");
+
+        if (outages.length === 0) {
+            elem.innerHTML = "Son 7 günde kesinti kaydı yok ✅";
+            return;
+        }
+
+        let html = "";
+        outages.forEach(o => {
+            const start = new Date(o.start).toLocaleString();
+            const end = o.end ? new Date(o.end).toLocaleString() : "Devam ediyor";
+
+            const duration = o.end ? Math.round((o.end - o.start) / 60000) : "—";
+
+            html += `
+                ⚡ <b>Kesinti:</b> ${start} → ${end}<br>
+                ⏱️ <b>Süre:</b> ${duration} dk<br><br>
+            `;
+        });
+
+        elem.innerHTML = html;
+    });
+}
+
+// Toplam kesinti sayısı
+function loadTotalOutages() {
+    firebase.database().ref(`${devicePath}/outages`).on("value", snapshot => {
+        const data = snapshot.val() || {};
+        const outages = Object.values(data);
+
+        document.getElementById("total-outages").innerText = outages.length + " kesinti";
+    });
+}
+
+// Toplam kesinti süresi
+function loadTotalOutageDuration() {
+    firebase.database().ref(`${devicePath}/outages`).on("value", snapshot => {
+        const data = snapshot.val() || {};
+        const outages = Object.values(data);
+
+        let totalMinutes = 0;
+        outages.forEach(o => {
+            if (o.end) totalMinutes += (o.end - o.start) / 60000;
+        });
+
+        document.getElementById("total-outage-duration").innerText = Math.round(totalMinutes) + " dk";
+    });
+}
+
+// Çağır
+loadOutageHistory();
+loadTotalOutages();
+loadTotalOutageDuration();
 
 
 
