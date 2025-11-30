@@ -500,8 +500,7 @@ function refreshData() {
 
 // Uygulama başlatma
 window.addEventListener('load', function() {
-    initTheme();
-    createRealChart(); // Fake data yerine real chart
+    initTheme();   
     loadDailyStats();
     loadWeeklySummary();
     loadOutageHistory();
@@ -953,4 +952,4 @@ window.addEventListener('load', function() {
             showTempAlert('🔴 Firebase bağlantısı kesildi', 'danger');
         }
     });
-});  // ← BU EKSİKTİ!
+});  
