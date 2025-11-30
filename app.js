@@ -165,7 +165,7 @@ function initializeChartWithSampleData() {
     const freezerData = [];
     
     // Son 24 saat için örnek veri
-    for (let i = 2; i >= 0; i--) {
+    for (let i = 24; i >= 0; i--) {
         const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
         labels.push(time.getHours() + ':00');
         
