@@ -856,28 +856,29 @@ function saveOutage(startTime, endTime) {
     });
 }
 
-// Kesinti geçmişini yükle
-// Kesinti geçmişini yükle (7 gün) — OPTİMİZE EDİLMİŞ SÜRÜM
+
+// Kesinti geçmişini yükle (60 gün) — OPTİMİZE EDİLMİŞ SÜRÜM
 function loadOutageHistory() {
     const today = new Date();
-    const last7Days = new Date(today);
-    last7Days.setDate(last7Days.getDate() - 7);
+    const last60Days = new Date(today);
+    last60Days.setDate(last60Days.getDate() - 60); // son 60 gün
 
     const outagesRef = firebase.database()
         .ref('devices/kitchen/outages')
         .orderByChild('start')
-        .startAt(last7Days.getTime());
+        .startAt(last60Days.getTime());
 
-    // 🔥 TEK LİSTENER — hem ilk yükleme hem canlı güncelleme
+    // 🔥 Tek listener: hem ilk yükleme hem canlı güncelleme
     outagesRef.on('value', snapshot => {
         const outages = [];
         snapshot.forEach(child => outages.push(child.val()));
         
-        outages.sort((a, b) => b.start - a.start); // Yeniden eskiye
+        outages.sort((a, b) => b.start - a.start); // yeniden eskiye
         
         displayOutageHistory(outages);
     });
 }
+
 
 
 // Kesinti geçmişini göster
