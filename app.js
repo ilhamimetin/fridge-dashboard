@@ -434,19 +434,17 @@ firebase.database().ref("devices/kitchen/fridge").on("value", function(snapshot)
         
         const status = checkStatus(value, 'fridge', true);
         document.getElementById('fridge-status').className = 'sensor-status ' + status.class;
-        document.getElementById('fridge-status').innerText = status.text;
-        
-        // SON GÜNCELLEMEYİ KAYDET - SADECE BAĞLI İSE
-        firebase.database().ref('.info/connected').once('value').then((connSnap) => {
-            if (connSnap.val() === true) {
-                lastOverallUpdate = new Date();
-                console.log("✅ lastOverallUpdate güncellendi:", lastOverallUpdate);
-                
-                // Web timestamp'i Firebase'e yaz
-                firebase.database().ref("devices/kitchen/lastUpdate").set(Date.now());
-                updateConnectionStatus();
-            }
-        });
+        document.getElementById('fridge-status').innerText = status.text;      
+    }
+});
+// lastUpdate timestamp'ini dinle
+firebase.database().ref("devices/kitchen/lastUpdate").on("value", function(snapshot) {
+    const timestamp = snapshot.val();
+    
+    if (timestamp !== null) {
+        lastOverallUpdate = new Date(timestamp);
+        console.log("⏰ Firebase lastUpdate:", lastOverallUpdate);
+        updateConnectionStatus();
     }
 });
 
@@ -460,22 +458,9 @@ firebase.database().ref("devices/kitchen/freezer").on("value", function(snapshot
         
         const status = checkStatus(value, 'freezer', true);
         document.getElementById('freezer-status').className = 'sensor-status ' + status.class;
-        document.getElementById('freezer-status').innerText = status.text;
-        
-        // SON GÜNCELLEMEYİ KAYDET - SADECE BAĞLI İSE
-        firebase.database().ref('.info/connected').once('value').then((connSnap) => {
-            if (connSnap.val() === true) {
-                lastOverallUpdate = new Date();
-                console.log("✅ lastOverallUpdate güncellendi:", lastOverallUpdate);
-                
-                // Web timestamp'i Firebase'e yaz
-                firebase.database().ref("devices/kitchen/lastUpdate").set(Date.now());
-                updateConnectionStatus();
-            }
-        });
+        document.getElementById('freezer-status').innerText = status.text;       
     }
 });
-
 // ============================================
 // YARDIMCI FONKSİYONLAR
 // ============================================
