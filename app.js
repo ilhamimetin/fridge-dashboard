@@ -162,32 +162,19 @@ function loadChartData() {
     initializeChartWithSampleData();
 }
 
-// Örnek veri ile grafiği başlat
-function initializeChartWithSampleData() {
-    const now = new Date();
-    const labels = [];
-    const fridgeData = [];
-    const freezerData = [];
-    
-    // Son 24 saat için örnek veri
-    for (let i = 24; i >= 0; i--) {
-        const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
-        labels.push(time.getHours() + ':00');
-        
-        // Gerçekçi sıcaklık dalgalanmaları
-        const fridgeBase = (time.getHours() >= 0 && time.getHours() < 6) ? 3 : 5;
-        const freezerBase = -18;
-        
-        fridgeData.push(+(fridgeBase + (Math.random() * 2 - 1)).toFixed(1));
-        freezerData.push(+(freezerBase + (Math.random() * 2 - 1)).toFixed(1));
-    }
-    
+// Gerçek veri ile grafiği başlat veri yoksa mesaj yaz
+function initializeChartWithSampleData() {   
     if (temperatureChart) {
-        temperatureChart.data.labels = labels;
-        temperatureChart.data.datasets[0].data = fridgeData;
-        temperatureChart.data.datasets[1].data = freezerData;
+        temperatureChart.data.labels = [];
+        temperatureChart.data.datasets[0].data = [];
+        temperatureChart.data.datasets[1].data = [];
         temperatureChart.update('none');
     }
+    
+    // Grafik alanına mesaj ekle
+    document.querySelector('.chart-container').innerHTML = 
+        '<canvas id="temperatureChart"></canvas>' +
+        '<p style="text-align:center; color: var(--text-secondary); padding: 20px;">📊 Veriler toplanıyor... İlk grafikler 1 saat içinde oluşacak.</p>';
 }
 
 // Yeni veri geldiğinde grafiği güncelle
