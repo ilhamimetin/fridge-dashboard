@@ -36,6 +36,11 @@ const NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 dakika
 
 // Gerçek verilerle grafik oluştur
 function createRealChart() {
+    // Eğer grafik zaten varsa, önce yok et
+    if (temperatureChart) {
+        temperatureChart.destroy();
+    }
+    
     const ctx = document.getElementById('temperatureChart').getContext('2d');
     const isDark = document.body.classList.contains('dark-mode');
     
