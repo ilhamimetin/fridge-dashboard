@@ -1,3 +1,5 @@
+// GitHub'a yerel bilgisayardan commit attma
+
 // Firebase Config (Aynı) // Çalışan
 var firebaseConfig = {
     apiKey: "AIzaSyBhMDR_0dLivEYWqbSte0OnSMlciB8aUuA",
