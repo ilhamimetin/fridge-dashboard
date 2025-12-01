@@ -1,4 +1,6 @@
 // GitHub'a yerel bilgisayardan commit attma
+// GitHub'a yerel bilgisayardan commit attma cursor ile
+
 
 // Firebase Config (Aynı) // Çalışan
 var firebaseConfig = {
