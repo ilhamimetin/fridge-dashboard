@@ -533,7 +533,7 @@ firebase
     const value = snapshot.val();
     if (value !== null) {
       console.log("🧊 Fridge:", value);
-      document.getElementById("fridge").textContent = value.toFixed(1) + " °C";
+      document.getElementById("fridge-temp").textContent = value.toFixed(1) + " °C";
       document.getElementById("fridge-time").textContent =
         new Date().toLocaleTimeString();
 
@@ -559,7 +559,7 @@ firebase
     const value = snapshot.val();
     if (value !== null) {
       console.log("❄️ Freezer:", value);
-      document.getElementById("freezer").textContent = value.toFixed(1) + " °C";
+      document.getElementById("freezer-temp").textContent = value.toFixed(1) + " °C";
       document.getElementById("freezer-time").textContent =
         new Date().toLocaleTimeString();
 
