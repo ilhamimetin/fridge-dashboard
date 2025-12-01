@@ -51,44 +51,47 @@
           Elektrik kesintisi süresi: <span id="outageDuration">--</span>
         </div>
       </div>
-      <!-- Anlık Sıcaklıklar -- Ortam Sıcaklığı - Derin Dondurucu -->
+
+      <!-- Anlık Sıcaklıklar - Ortam Sıcaklığı - Derin Dondurucu -->
       <div class="grid">
-        <!-- Normal Dolap -->
+        <!-- Ortam Sıcaklığı -->
         <div class="card">
           <h1>🌡️ Ortam Sıcaklığı</h1>
-          <div class="temp" id="fridge">--</div>
-          <div class="timestamp" id="fridge-time">Bekleniyor...</div>
-          <div class="sensor-status ok" id="fridge-status">Veri Bekleniyor</div>
+          <div class="temp" id="room-temp">--</div>
+          <div class="timestamp" id="room-time">Bekleniyor...</div>
+          <div class="sensor-status ok" id="room-status">Veri Bekleniyor</div>
         </div>
-        <!-- Dondurucu -->
+        <!-- Derin Dondurucu -->
         <div class="card">
           <h1>❄️ Derin Dondurucu</h1>
-          <div class="temp" id="freezer">--</div>
-          <div class="timestamp" id="freezer-time">Bekleniyor...</div>
-          <div class="sensor-status ok" id="freezer-status">
+          <div class="temp" id="deep-freezer-temp">--</div>
+          <div class="timestamp" id="deep-freezer-time">Bekleniyor...</div>
+          <div class="sensor-status ok" id="deep-freezer-status">
             Veri Bekleniyor
           </div>
         </div>
       </div>
-       <!-- Anlık Sıcaklıklar -- Buzdolabı - Dondurucu -->
+
+      <!-- Anlık Sıcaklıklar - Buzdolabı - Dondurucu -->
       <div class="grid">
         <!-- Normal Dolap -->
         <div class="card">
           <h1>🧊 Normal Dolap</h1>
-          <div class="temp" id="fridge">--</div>
+          <div class="temp" id="fridge-temp">--</div>
           <div class="timestamp" id="fridge-time">Bekleniyor...</div>
           <div class="sensor-status ok" id="fridge-status">Veri Bekleniyor</div>
         </div>
         <!-- Dondurucu -->
         <div class="card">
           <h1>❄️ Dondurucu</h1>
-          <div class="temp" id="freezer">--</div>
+          <div class="temp" id="freezer-temp">--</div>
           <div class="timestamp" id="freezer-time">Bekleniyor...</div>
           <div class="sensor-status ok" id="freezer-status">
             Veri Bekleniyor
           </div>
         </div>
       </div>
+
       <!-- 24 Saatlik Grafik -->
       <div class="card full-width">
         <h2>📊 Son 24 Saat - Sıcaklık Değişimi</h2>
