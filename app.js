@@ -1346,8 +1346,12 @@ window.addEventListener("load", function () {
   initTheme();
 
   // Grafikleri oluştur
-  createCoolersChart(); // ✅ YENİ - Soğutucular grafiği
-  createAmbientChart(); // ✅ YENİ - Ortam Sıcaklığı grafiği
+  createCoolersChart();
+  createAmbientChart();
+
+  // ✅ GEÇMİŞ VERİLERİ YÜKLE - BU SATIRLARI EKLE
+  loadCoolersChartData();
+  loadAmbientChartData();
 
   // İstatistikleri yükle
   loadDailyStats();
