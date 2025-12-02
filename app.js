@@ -157,6 +157,7 @@ function getChartOptions(isDark) {
     },
     scales: {
       x: {
+        reverse: true, // ← BU SATIRI EKLEYİN! (Saat 159)
         display: true,
         title: {
           display: true,
@@ -334,13 +335,13 @@ function loadCoolersChartData() {
               )
                 .sort((a, b) => {
                   // "HH:MM" formatını karşılaştır
-                  const [aHour, aMin] = a.split(':').map(Number);
-                  const [bHour, bMin] = b.split(':').map(Number);
-                  
+                  const [aHour, aMin] = a.split(":").map(Number);
+                  const [bHour, bMin] = b.split(":").map(Number);
+
                   // Saat ve dakikayı sayıya çevirerek karşılaştır
                   const aTime = aHour * 60 + aMin;
                   const bTime = bHour * 60 + bMin;
-                  
+
                   return aTime - bTime;
                 })
                 .slice(-48); // Son 48 veri noktası
@@ -390,13 +391,13 @@ function loadAmbientChartData() {
       const times = Object.keys(ambientData)
         .sort((a, b) => {
           // "HH:MM" formatını karşılaştır
-          const [aHour, aMin] = a.split(':').map(Number);
-          const [bHour, bMin] = b.split(':').map(Number);
-          
+          const [aHour, aMin] = a.split(":").map(Number);
+          const [bHour, bMin] = b.split(":").map(Number);
+
           // Saat ve dakikayı sayıya çevirerek karşılaştır
           const aTime = aHour * 60 + aMin;
           const bTime = bHour * 60 + bMin;
-          
+
           return aTime - bTime;
         })
         .slice(-48); // Son 48 veri noktası
