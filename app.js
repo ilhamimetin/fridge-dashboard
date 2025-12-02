@@ -508,7 +508,7 @@ firebase
 // Derin Dondurucu listener'ı (2. Wemos - Bodrum)
 firebase
   .database()
-  .ref("devices/basement/sensors/deepFreezer")
+  .ref("devices/basement/sensors/fridge")
   .on("value", function (snapshot) {
     const value = snapshot.val();
     if (value !== null) {
