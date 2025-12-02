@@ -92,14 +92,14 @@
         </div>
       </div>
 
-      <!-- 24 Saatlik Grafik -->
+      <!-- 24 Saatlik Grafik - Soğutucular -->
       <div class="card full-width">
-        <h2>📊 Son 24 Saat - Sıcaklık Değişimi</h2>
+        <h2>📊 Soğutucular - Sıcaklık Değişimi</h2>
         <div class="chart-container">
-          <canvas id="temperatureChart"></canvas>
+          <canvas id="coolersChart"></canvas>
         </div>
         <p
-          id="chartMessage"
+          id="coolersChartMessage"
           style="
             text-align: center;
             color: var(--text-secondary);
@@ -109,9 +109,68 @@
           📊 Veriler toplanıyor... İlk grafikler 1 saat içinde oluşacak.
         </p>
       </div>
-      <!-- İSTATİSTİKLER BÖLÜMÜ (Grafikten sonra eklenecek) -->
-      <!-- Günlük İstatistikler -->
+
+      <!-- 24 Saatlik Grafik - Ortam Sıcaklığı -->
+      <div class="card full-width">
+        <h2>🌡️ Ortam Sıcaklığı - Değişim</h2>
+        <div class="chart-container">
+          <canvas id="ambientChart"></canvas>
+        </div>
+        <p
+          id="ambientChartMessage"
+          style="
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 20px;
+          "
+        >
+          📊 Veriler toplanıyor... İlk grafikler 1 saat içinde oluşacak.
+        </p>
+      </div>
+      <!-- İSTATİSTİKLER - YENİ SIRALAMA -->
       <div class="stats-grid">
+        <!-- Ortam Sıcaklığı İstatistikleri -->
+        <div class="card stat-card" id="ambient-stats">
+          <h3>🌡️ Ortam Sıcaklığı - Bugün</h3>
+          <div class="stat-item">
+            <span class="stat-label">📉 Minimum:</span>
+            <span class="stat-value" id="ambient-min">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">📈 Maksimum:</span>
+            <span class="stat-value" id="ambient-max">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">📊 Ortalama:</span>
+            <span class="stat-value" id="ambient-avg">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">🔢 Ölçüm Sayısı:</span>
+            <span class="stat-value" id="ambient-count">--</span>
+          </div>
+        </div>
+
+        <!-- Derin Dondurucu İstatistikleri -->
+        <div class="card stat-card" id="deep-freezer-stats">
+          <h3>❄️ Derin Dondurucu - Bugün</h3>
+          <div class="stat-item">
+            <span class="stat-label">📉 Minimum:</span>
+            <span class="stat-value" id="deep-freezer-min">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">📈 Maksimum:</span>
+            <span class="stat-value" id="deep-freezer-max">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">📊 Ortalama:</span>
+            <span class="stat-value" id="deep-freezer-avg">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">🔢 Ölçüm Sayısı:</span>
+            <span class="stat-value" id="deep-freezer-count">--</span>
+          </div>
+        </div>
+
         <!-- Normal Dolap İstatistikleri -->
         <div class="card stat-card" id="fridge-stats">
           <h3>🧊 Normal Dolap - Bugün</h3>
@@ -132,6 +191,7 @@
             <span class="stat-value" id="fridge-count">--</span>
           </div>
         </div>
+
         <!-- Dondurucu İstatistikleri -->
         <div class="card stat-card" id="freezer-stats">
           <h3>❄️ Dondurucu - Bugün</h3>
@@ -153,9 +213,10 @@
           </div>
         </div>
       </div>
+
       <!-- Elektrik Kesintisi Geçmişi -->
       <div class="card full-width">
-        <h2>⚡ Elektrik Kesintisi Geçmişi (Son 7 Gün)</h2>
+        <h2>⚡ Elektrik Kesintisi Geçmişi (Son 14 Gün)</h2>
         <div id="outageHistory">
           <p
             style="
@@ -170,7 +231,7 @@
       </div>
       <!-- Haftalık Özet -->
       <div class="card full-width weekly-summary">
-        <h2>📅 Haftalık Özet (Son 7 Gün)</h2>
+        <h2>📅 2 Haftalık Özet (Son 14 Gün)</h2>
         <div class="summary-grid">
           <div class="summary-item">
             <div class="summary-icon">🧊</div>

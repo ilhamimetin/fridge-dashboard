@@ -22,7 +22,8 @@ let lastOverallUpdate = null;
 let isOnline = true;
 let wasOffline = false;
 let offlineStartTime = null;
-let temperatureChart = null;
+let coolersChart = null; // 1. Grafik: Soğutucular (Derin Dondurucu + Dondurucu + Buzdolabı)
+let ambientChart = null; // 2. Grafik: Ortam Sıcaklığı
 let deferredPrompt = null;
 
 // Bildirim değişkenleri
@@ -35,130 +36,191 @@ let lastNotificationTime = {
 const NOTIFICATION_COOLDOWN = 5 * 60 * 1000; // 5 dakika
 
 // ============================================
-// YENİ: GELİŞMİŞ İSTATİSTİK SİSTEMİ
+// YENİ: ÇİFT GRAFİK SİSTEMİ
 // ============================================
 
-// Gerçek verilerle grafik oluştur
-function createRealChart() {
+// Gerçek verilerle Soğutucular grafiğini oluştur
+function createCoolersChart() {
   // Eğer grafik zaten varsa, önce yok et
-  if (temperatureChart) {
-    temperatureChart.destroy();
+  if (coolersChart) {
+    coolersChart.destroy();
   }
 
-  const ctx = document.getElementById("temperatureChart").getContext("2d");
+  const ctx = document.getElementById("coolersChart").getContext("2d");
   const isDark = document.body.classList.contains("dark-mode");
 
-  // Boş grafik oluştur, veriler real-time gelecek
-  temperatureChart = new Chart(ctx, {
+  // Soğutucular grafiği oluştur
+  coolersChart = new Chart(ctx, {
     type: "line",
     data: {
       labels: [], // Zaman etiketleri
       datasets: [
         {
-          label: "🧊 Normal Dolap",
-          data: [], // Sıcaklık verileri
-          borderColor: "#007BFF",
-          backgroundColor: "rgba(0, 123, 255, 0.1)",
+          label: "🧊 Derin Dondurucu",
+          data: [],
+          borderColor: "#6f42c1", // Mor
+          backgroundColor: "rgba(111, 66, 193, 0.1)",
           tension: 0.4,
           fill: true,
           borderWidth: 2,
         },
         {
           label: "❄️ Dondurucu",
-          data: [], // Sıcaklık verileri
-          borderColor: "#6f42c1",
-          backgroundColor: "rgba(111, 66, 193, 0.1)",
+          data: [],
+          borderColor: "#007BFF", // Mavi
+          backgroundColor: "rgba(0, 123, 255, 0.1)",
+          tension: 0.4,
+          fill: true,
+          borderWidth: 2,
+        },
+        {
+          label: "🧊 Normal Dolap",
+          data: [],
+          borderColor: "#28a745", // Yeşil
+          backgroundColor: "rgba(40, 167, 69, 0.1)",
           tension: 0.4,
           fill: true,
           borderWidth: 2,
         },
       ],
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: true,
-          position: "top",
-          labels: {
-            color: isDark ? "#e0e0e0" : "#333",
-            usePointStyle: true,
-            padding: 20,
-          },
-        },
-        tooltip: {
-          mode: "index",
-          intersect: false,
-          backgroundColor: isDark ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.9)",
-          titleColor: isDark ? "#e0e0e0" : "#333",
-          bodyColor: isDark ? "#e0e0e0" : "#333",
-          callbacks: {
-            label: function (context) {
-              return (
-                context.dataset.label +
-                ": " +
-                context.parsed.y.toFixed(1) +
-                "°C"
-              );
-            },
-          },
-        },
-      },
-      scales: {
-        x: {
-          display: true,
-          title: {
-            display: true,
-            text: "Zaman",
-            color: isDark ? "#e0e0e0" : "#333",
-          },
-          ticks: {
-            maxTicksLimit: 8,
-            color: isDark ? "#b0b0b0" : "#666",
-            callback: function (value, index, values) {
-              // Sadece belirli aralıklarla zaman göster
-              if (index % Math.ceil(values.length / 8) === 0) {
-                return this.getLabelForValue(value);
-              }
-              return "";
-            },
-          },
-          grid: {
-            color: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-            drawBorder: false,
-          },
-        },
-        y: {
-          display: true,
-          title: {
-            display: true,
-            text: "Sıcaklık (°C)",
-            color: isDark ? "#e0e0e0" : "#333",
-          },
-          ticks: {
-            color: isDark ? "#b0b0b0" : "#666",
-          },
-          grid: {
-            color: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-            drawBorder: false,
-          },
-        },
-      },
-      interaction: {
-        mode: "nearest",
-        axis: "x",
-        intersect: false,
-      },
-      animation: {
-        duration: 1000,
-        easing: "easeOutQuart",
-      },
-    },
+    options: getChartOptions(isDark),
   });
 
   // Grafiği gerçek verilerle besle
-  loadChartData();
+  loadCoolersChartData();
+}
+
+// Gerçek verilerle Ortam Sıcaklığı grafiğini oluştur
+function createAmbientChart() {
+  // Eğer grafik zaten varsa, önce yok et
+  if (ambientChart) {
+    ambientChart.destroy();
+  }
+
+  const ctx = document.getElementById("ambientChart").getContext("2d");
+  const isDark = document.body.classList.contains("dark-mode");
+
+  // Ortam Sıcaklığı grafiği oluştur
+  ambientChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: [], // Zaman etiketleri
+      datasets: [
+        {
+          label: "🌡️ Ortam Sıcaklığı",
+          data: [],
+          borderColor: "#fd7e14", // Turuncu
+          backgroundColor: "rgba(253, 126, 20, 0.1)",
+          tension: 0.4,
+          fill: true,
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: getChartOptions(isDark),
+  });
+
+  // Grafiği gerçek verilerle besle
+  loadAmbientChartData();
+}
+
+// Ortak chart options
+function getChartOptions(isDark) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: "top",
+        labels: {
+          color: isDark ? "#e0e0e0" : "#333",
+          usePointStyle: true,
+          padding: 20,
+        },
+      },
+      tooltip: {
+        mode: "index",
+        intersect: false,
+        backgroundColor: isDark ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.9)",
+        titleColor: isDark ? "#e0e0e0" : "#333",
+        bodyColor: isDark ? "#e0e0e0" : "#333",
+        callbacks: {
+          label: function (context) {
+            return (
+              context.dataset.label + ": " + context.parsed.y.toFixed(1) + "°C"
+            );
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        display: true,
+        title: {
+          display: true,
+          text: "Zaman",
+          color: isDark ? "#e0e0e0" : "#333",
+        },
+        ticks: {
+          maxTicksLimit: 8,
+          color: isDark ? "#b0b0b0" : "#666",
+          callback: function (value, index, values) {
+            if (index % Math.ceil(values.length / 8) === 0) {
+              return this.getLabelForValue(value);
+            }
+            return "";
+          },
+        },
+        grid: {
+          color: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+          drawBorder: false,
+        },
+      },
+      y: {
+        display: true,
+        title: {
+          display: true,
+          text: "Sıcaklık (°C)",
+          color: isDark ? "#e0e0e0" : "#333",
+        },
+        ticks: {
+          color: isDark ? "#b0b0b0" : "#666",
+        },
+        grid: {
+          color: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+          drawBorder: false,
+        },
+      },
+    },
+    interaction: {
+      mode: "nearest",
+      axis: "x",
+      intersect: false,
+    },
+    animation: {
+      duration: 1000,
+      easing: "easeOutQuart",
+    },
+    // ✅ ZOOM PLUGIN EKLE
+    zoom: {
+      pan: {
+        enabled: true, // ✅ Kaydırma aktif
+        mode: "x", // ✅ Sadece x ekseninde
+        modifierKey: "ctrl", // ✅ Ctrl basılıyken kaydır
+      },
+      zoom: {
+        wheel: {
+          enabled: true, // ✅ Fare tekerleği ile zoom
+        },
+        pinch: {
+          enabled: true, // ✅ Touch zoom (mobile)
+        },
+        mode: "x", // ✅ Sadece x ekseninde zoom
+      },
+    },
+  };
 }
 
 // Firebase'den grafik verilerini yükle
@@ -190,12 +252,12 @@ function loadChartData() {
 
           // Grafiğe yükle
           times.forEach((time) => {
-            temperatureChart.data.labels.push(time);
-            temperatureChart.data.datasets[0].data.push(fridgeData[time] || 0);
-            temperatureChart.data.datasets[1].data.push(freezerData[time] || 0);
+            coolersChart.data.labels.push(time);
+            coolersChart.data.datasets[0].data.push(fridgeData[time] || 0);
+            coolersChart.data.datasets[1].data.push(freezerData[time] || 0);
           });
 
-          temperatureChart.update("none");
+          coolersChart.update("none");
 
           // Mesajı gizle
           const msg = document.getElementById("chartMessage");
@@ -207,11 +269,11 @@ function loadChartData() {
 }
 // Yeni veri geldiğinde grafiği güncelle
 function updateChartWithNewData(fridgeTemp, freezerTemp) {
-  if (!temperatureChart) return;
+  if (!coolersChart) return;
 
   // Mesajı gizle (ilk veri geldiğinde)
   const msg = document.getElementById("chartMessage");
-  if (msg && temperatureChart.data.labels.length === 0) {
+  if (msg && coolersChart.data.labels.length === 0) {
     msg.style.display = "none";
   }
 
@@ -220,18 +282,179 @@ function updateChartWithNewData(fridgeTemp, freezerTemp) {
     now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0");
 
   // Mevcut verileri kaydır ve yeni veriyi ekle
-  temperatureChart.data.labels.push(currentTime);
-  temperatureChart.data.datasets[0].data.push(fridgeTemp);
-  temperatureChart.data.datasets[1].data.push(freezerTemp);
+  coolersChart.data.labels.push(currentTime);
+  coolersChart.data.datasets[0].data.push(fridgeTemp);
+  coolersChart.data.datasets[1].data.push(freezerTemp);
 
   // 48'den fazla nokta varsa eski verileri temizle
-  if (temperatureChart.data.labels.length > 48) {
-    temperatureChart.data.labels.shift();
-    temperatureChart.data.datasets[0].data.shift();
-    temperatureChart.data.datasets[1].data.shift();
+  if (coolersChart.data.labels.length > 48) {
+    coolersChart.data.labels.shift();
+    coolersChart.data.datasets[0].data.shift();
+    coolersChart.data.datasets[1].data.shift();
   }
 
-  temperatureChart.update("none");
+  coolersChart.update("none");
+}
+
+// Firebase'den Soğutucular grafik verilerini yükle
+function loadCoolersChartData() {
+  const today = new Date().toISOString().split("T")[0];
+
+  // Fridge verilerini yükle
+  firebase
+    .database()
+    .ref(`stats/hourly/${today}/fridge`)
+    .once("value")
+    .then((snapshot) => {
+      const fridgeData = snapshot.val() || {};
+
+      // Freezer verilerini yükle
+      return firebase
+        .database()
+        .ref(`stats/hourly/${today}/freezer`)
+        .once("value")
+        .then((freezerSnapshot) => {
+          const freezerData = freezerSnapshot.val() || {};
+
+          // DeepFreezer verilerini yükle
+          return firebase
+            .database()
+            .ref(`stats/hourly/${today}/deepFreezer`)
+            .once("value")
+            .then((deepFreezerSnapshot) => {
+              const deepFreezerData = deepFreezerSnapshot.val() || {};
+
+              // Zamanları sırala
+              const times = Array.from(
+                new Set([
+                  ...Object.keys(fridgeData),
+                  ...Object.keys(freezerData),
+                  ...Object.keys(deepFreezerData),
+                ])
+              )
+                .sort()
+                .slice(-48);
+
+              // Grafiğe yükle - SADECE tüm sensörlerde veri olan zamanları ekle
+              times.forEach((time) => {
+                // Eğer ÜÇ sensörde de veri VARSA ekle
+                if (
+                  deepFreezerData[time] !== undefined &&
+                  freezerData[time] !== undefined &&
+                  fridgeData[time] !== undefined
+                ) {
+                  coolersChart.data.labels.push(time);
+                  coolersChart.data.datasets[0].data.push(
+                    deepFreezerData[time]
+                  );
+                  coolersChart.data.datasets[1].data.push(freezerData[time]);
+                  coolersChart.data.datasets[2].data.push(fridgeData[time]);
+                }
+              });
+
+              coolersChart.update("none");
+
+              // Mesajı gizle
+              const msg = document.getElementById("coolersChartMessage");
+              if (msg && times.length > 0) {
+                msg.style.display = "none";
+              }
+            });
+        });
+    });
+}
+
+// Firebase'den Ortam Sıcaklığı grafik verilerini yükle
+function loadAmbientChartData() {
+  const today = new Date().toISOString().split("T")[0];
+
+  // Ambient verilerini yükle
+  firebase
+    .database()
+    .ref(`stats/hourly/${today}/ambient`)
+    .once("value")
+    .then((snapshot) => {
+      const ambientData = snapshot.val() || {};
+
+      // Zamanları sırala
+      const times = Object.keys(ambientData).sort().slice(-48);
+
+      // Grafiğe yükle
+      times.forEach((time) => {
+        ambientChart.data.labels.push(time);
+        ambientChart.data.datasets[0].data.push(ambientData[time] || 0);
+      });
+
+      ambientChart.update("none");
+
+      // Mesajı gizle
+      const msg = document.getElementById("ambientChartMessage");
+      if (msg && times.length > 0) {
+        msg.style.display = "none";
+      }
+    });
+}
+
+// Yeni veri geldiğinde Soğutucular grafiğini güncelle
+function updateCoolersChartWithNewData(
+  deepFreezerTemp,
+  freezerTemp,
+  fridgeTemp
+) {
+  if (!coolersChart) return;
+
+  // Mesajı gizle (ilk veri geldiğinde)
+  const msg = document.getElementById("coolersChartMessage");
+  if (msg && coolersChart.data.labels.length === 0) {
+    msg.style.display = "none";
+  }
+
+  const now = new Date();
+  const currentTime =
+    now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0");
+
+  // Mevcut veriler极 kaydır ve yeni veriyi ekle
+  coolersChart.data.labels.push(currentTime);
+  coolersChart.data.datasets[0].data.push(deepFreezerTemp);
+  coolersChart.data.datasets[1].data.push(freezerTemp);
+  coolersChart.data.datasets[2].data.push(fridgeTemp);
+
+  // 48'den fazla nokta varsa eski verileri temizle
+  if (coolersChart.data.labels.length > 48) {
+    coolersChart.data.labels.shift();
+    coolersChart.data.datasets[0].data.shift();
+    coolersChart.data.datasets[1].data.shift();
+    coolersChart.data.datasets[2].data.shift();
+  }
+
+  coolersChart.update("none");
+}
+
+// Yeni veri geldiğinde Ortam Sıcaklığı grafiğini güncelle
+function updateAmbientChartWithNewData(ambientTemp) {
+  if (!ambientChart) return;
+
+  // Mesajı gizle (ilk veri geldiğinde)
+  const msg = document.getElementById("ambientChartMessage");
+  if (msg && ambientChart.data.labels.length === 0) {
+    msg.style.display = "none";
+  }
+
+  const now = new Date();
+  const currentTime =
+    now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0");
+
+  // Mevcut verileri kaydır ve yeni veriyi ekle
+  ambientChart.data.labels.push(currentTime);
+  ambientChart.data.datasets[0].data.push(ambientTemp);
+
+  // 48'den fazla nokta varsa eski verileri temizle
+  if (ambientChart.data.labels.length > 48) {
+    ambientChart.data.labels.shift();
+    ambientChart.data.datasets[0].data.shift();
+  }
+
+  ambientChart.update("none");
 }
 
 // ============================================
@@ -318,6 +541,46 @@ function loadDailyStats() {
         resetStatsDisplay("freezer");
       }
     });
+
+  // Derin Dondurucu
+  firebase
+    .database()
+    .ref(`stats/daily/${today}/deepFreezer`)
+    .on("value", (snapshot) => {
+      const data = snapshot.val();
+      const element = document.getElementById("deep-freezer-stats");
+      if (data && element) {
+        document.getElementById("deep-freezer-min").textContent =
+          data.min.toFixed(1) + " °C";
+        document.getElementById("deep-freezer-max").textContent =
+          data.max.toFixed(1) + " °C";
+        document.getElementById("deep-freezer-avg").textContent =
+          (data.sum / data.count).toFixed(1) + " °C";
+        document.getElementById("deep-freezer-count").textContent = data.count;
+      } else {
+        resetStatsDisplay("deep-freezer");
+      }
+    });
+
+  // Ortam Sıcaklığı
+  firebase
+    .database()
+    .ref(`stats/daily/${today}/ambient`)
+    .on("value", (snapshot) => {
+      const data = snapshot.val();
+      const element = document.getElementById("ambient-stats");
+      if (data && element) {
+        document.getElementById("ambient-min").textContent =
+          data.min.toFixed(1) + " °C";
+        document.getElementById("ambient-max").textContent =
+          data.max.toFixed(1) + " °C";
+        document.getElementById("ambient-avg").textContent =
+          (data.sum / data.count).toFixed(1) + " °C";
+        document.getElementById("ambient-count").textContent = data.count;
+      } else {
+        resetStatsDisplay("ambient");
+      }
+    });
 }
 
 // İstatistikleri sıfırla
@@ -331,19 +594,21 @@ function resetStatsDisplay(type) {
 // Haftalık özet hesapla (GÜNCELLENDİ)
 function loadWeeklySummary() {
   const today = new Date();
-  const last7Days = [];
+  const last14Days = []; // ✅ 7 → 14
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 14; i++) {
+    // ✅ 7 → 14
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    last7Days.push(date.toISOString().split("T")[0]);
+    last14Days.push(date.toISOString().split("T")[0]);
   }
 
   let fridgeData = [],
     freezerData = [];
   let processedDays = 0;
 
-  last7Days.forEach((date) => {
+  last14Days.forEach((date) => {
+    // ✅ 7 → 14
     firebase
       .database()
       .ref(`stats/daily/${date}`)
@@ -368,7 +633,8 @@ function loadWeeklySummary() {
         }
 
         processedDays++;
-        if (processedDays === 7) {
+        if (processedDays === 14) {
+          // ✅ 7 → 14
           updateWeeklySummary(fridgeData, freezerData);
         }
       });
@@ -452,33 +718,33 @@ function updateConnectionStatus() {
 }
 // Sıcaklık durumunu kontrol et (Doğru sıcaklık aralıklarıyla)
 function checkStatus(temp, type, isConnected) {
-    if (!isConnected) return { class: 'offline', text: '⚠️ Bağlantı Yok' };
-    
-    if (type === 'ambient') {
-        // Ortam sıcaklığı - yangın alarmı için
-        if (temp > 35) return { class: 'danger', text: '🔥 YANGIN TEHLİKESİ!' };
-        if (temp > 30) return { class: 'warning', text: '⚡ Çok Sıcak Ortam' };
-        if (temp < 10) return { class: 'warning', text: '❄️ Çok Soğuk Ortam' };
-        return { class: 'ok', text: '✓ Normal Ortam' };
-    } else if (type === 'fridge') {
-        // Normal buzdolabı (+4°C bölgesi)
-        if (temp > 8) return { class: 'danger', text: '🔥 Çok Sıcak!' };
-        if (temp > 6) return { class: 'warning', text: '⚡ Dikkat' };
-        if (temp < 2) return { class: 'warning', text: '❄️ Çok Soğuk' };
-        return { class: 'ok', text: '✓ Normal' };
-    } else if (type === 'freezer') {
-        // Normal buzdolabı dondurucusu (-18°C bölgesi)
-        if (temp > -10) return { class: 'danger', text: '🔥 ERİYOR! Tehlikeli' };
-        if (temp > -15) return { class: 'warning', text: '⚡ Dikkat - Erime' };
-        if (temp < -25) return { class: 'warning', text: '❄️ Aşırı Soğuk' };
-        return { class: 'ok', text: '✓ Normal Dondurucu' };
-    } else if (type === 'deepFreezer') {
-        // Derin dondurucu (-24°C bölgesi)
-        if (temp > -15) return { class: 'danger', text: '🔥 ERİYOR! Tehlikeli' };
-        if (temp > -18) return { class: 'warning', text: '⚡ Dikkat - Erime' };
-        if (temp < -30) return { class: 'warning', text: '❄️ Aşırı Soğuk' };
-        return { class: 'ok', text: '✓ Normal Derin Dondurucu' };
-    }
+  if (!isConnected) return { class: "offline", text: "⚠️ Bağlantı Yok" };
+
+  if (type === "ambient") {
+    // Ortam sıcaklığı - yangın alarmı için
+    if (temp > 35) return { class: "danger", text: "🔥 YANGIN TEHLİKESİ!" };
+    if (temp > 30) return { class: "warning", text: "⚡ Çok Sıcak Ortam" };
+    if (temp < 10) return { class: "warning", text: "❄️ Çok Soğuk Ortam" };
+    return { class: "ok", text: "✓ Normal Ortam" };
+  } else if (type === "fridge") {
+    // Normal buzdolabı (+4°C bölgesi)
+    if (temp > 8) return { class: "danger", text: "🔥 Çok Sıcak!" };
+    if (temp > 6) return { class: "warning", text: "⚡ Dikkat" };
+    if (temp < 2) return { class: "warning", text: "❄️ Çok Soğuk" };
+    return { class: "ok", text: "✓ Normal" };
+  } else if (type === "freezer") {
+    // Normal buzdolabı dondurucusu (-18°C bölgesi)
+    if (temp > -10) return { class: "danger", text: "🔥 ERİYOR! Tehlikeli" };
+    if (temp > -15) return { class: "warning", text: "⚡ Dikkat - Erime" };
+    if (temp < -25) return { class: "warning", text: "❄️ Aşırı Soğuk" };
+    return { class: "ok", text: "✓ Normal Dondurucu" };
+  } else if (type === "deepFreezer") {
+    // Derin dondurucu (-24°C bölgesi)
+    if (temp > -15) return { class: "danger", text: "🔥 ERİYOR! Tehlikeli" };
+    if (temp > -18) return { class: "warning", text: "⚡ Dikkat - Erime" };
+    if (temp < -30) return { class: "warning", text: "❄️ Aşırı Soğuk" };
+    return { class: "ok", text: "✓ Normal Derin Dondurucu" };
+  }
 }
 
 // ============================================
@@ -502,13 +768,17 @@ firebase
       document.getElementById("room-status").className =
         "sensor-status " + status.class;
       document.getElementById("room-status").innerText = status.text;
+      // ✅ GRAFİĞİ GÜNCELLE
+      updateAmbientChartWithNewData(value);
+      // ✅ İSTATİSTİKLERİ KAYDET
+      saveStats(value, "ambient");
     }
   });
 
 // Derin Dondurucu listener'ı (2. Wemos - Bodrum)
 firebase
   .database()
-  .ref("devices/basement/sensors/deepFreezer")
+  .ref("devices/basement/sensors/fridge")
   .on("value", function (snapshot) {
     const value = snapshot.val();
     if (value !== null) {
@@ -522,6 +792,15 @@ firebase
       document.getElementById("deep-freezer-status").className =
         "sensor-status " + status.class;
       document.getElementById("deep-freezer-status").innerText = status.text;
+      // ✅ İSTATİSTİKLERİ KAYDET
+      saveStats(value, "deepFreezer");
+
+      // ✅ GRAFİĞİ GÜNCELLE
+      const fridgeTemp =
+        coolersChart?.data?.datasets[2]?.data?.slice(-1)[0] || 0;
+      const freezerTemp =
+        coolersChart?.data?.datasets[1]?.data?.slice(-1)[0] || 0;
+      updateCoolersChartWithNewData(value, freezerTemp, fridgeTemp);
     }
   });
 
@@ -533,7 +812,8 @@ firebase
     const value = snapshot.val();
     if (value !== null) {
       console.log("🧊 Fridge:", value);
-      document.getElementById("fridge-temp").textContent = value.toFixed(1) + " °C";
+      document.getElementById("fridge-temp").textContent =
+        value.toFixed(1) + " °C";
       document.getElementById("fridge-time").textContent =
         new Date().toLocaleTimeString();
 
@@ -546,8 +826,10 @@ firebase
 
       // ✅ GRAFİĞİ GÜNCELLE
       const freezerTemp =
-        temperatureChart?.data?.datasets[1]?.data?.slice(-1)[0] || 0;
-      updateChartWithNewData(value, freezerTemp);
+        coolersChart?.data?.datasets[1]?.data?.slice(-1)[0] || 0;
+      const deepFreezerTemp =
+        coolersChart?.data?.datasets[0]?.data?.slice(-1)[0] || 0;
+      updateCoolersChartWithNewData(deepFreezerTemp, freezerTemp, value);
     }
   });
 
@@ -559,7 +841,8 @@ firebase
     const value = snapshot.val();
     if (value !== null) {
       console.log("❄️ Freezer:", value);
-      document.getElementById("freezer-temp").textContent = value.toFixed(1) + " °C";
+      document.getElementById("freezer-temp").textContent =
+        value.toFixed(1) + " °C";
       document.getElementById("freezer-time").textContent =
         new Date().toLocaleTimeString();
 
@@ -572,8 +855,10 @@ firebase
 
       // ✅ GRAFİĞİ GÜNCELLE
       const fridgeTemp =
-        temperatureChart?.data?.datasets[0]?.data?.slice(-1)[0] || 0;
-      updateChartWithNewData(fridgeTemp, value);
+        coolersChart?.data?.datasets[2]?.data?.slice(-1)[0] || 0;
+      const deepFreezerTemp =
+        coolersChart?.data?.datasets[0]?.data?.slice(-1)[0] || 0;
+      updateCoolersChartWithNewData(deepFreezerTemp, value, fridgeTemp);
     }
   });
 
@@ -661,7 +946,7 @@ function toggleTheme() {
   }
 
   // Grafik temasını güncelle
-  if (temperatureChart) {
+  if (coolersChart) {
     updateChartTheme();
   }
 }
@@ -670,20 +955,20 @@ function toggleTheme() {
 function updateChartTheme() {
   const isDark = document.body.classList.contains("dark-mode");
 
-  if (temperatureChart && temperatureChart.options) {
-    temperatureChart.options.scales.x.ticks.color = isDark ? "#b0b0b0" : "#666";
-    temperatureChart.options.scales.y.ticks.color = isDark ? "#b0b0b0" : "#666";
-    temperatureChart.options.scales.x.grid.color = isDark
+  if (coolersChart && coolersChart.options) {
+    coolersChart.options.scales.x.ticks.color = isDark ? "#b0b0b0" : "#666";
+    coolersChart.options.scales.y.ticks.color = isDark ? "#b0b0b0" : "#666";
+    coolersChart.options.scales.x.grid.color = isDark
       ? "rgba(255,255,255,0.1)"
       : "rgba(0,0,0,0.1)";
-    temperatureChart.options.scales.y.grid.color = isDark
+    coolersChart.options.scales.y.grid.color = isDark
       ? "rgba(255,255,255,0.1)"
       : "rgba(0,0,0,0.1)";
-    temperatureChart.options.plugins.legend.labels.color = isDark
+    coolersChart.options.plugins.legend.labels.color = isDark
       ? "#e0e0e0"
       : "#333";
 
-    temperatureChart.update();
+    coolersChart.update();
   }
 }
 
@@ -966,14 +1251,14 @@ function saveOutage(startTime, endTime) {
 // Kesinti geçmişini yükle
 function loadOutageHistory() {
   const today = new Date();
-  const last7Days = new Date(today);
-  last7Days.setDate(last7Days.getDate() - 7);
+  const last14Days = new Date(today); // ✅ 7 → 14
+  last14Days.setDate(last14Days.getDate() - 14); // ✅ 7 → 14
 
   firebase
     .database()
     .ref("devices/kitchen/outages")
     .orderByChild("start")
-    .startAt(last7Days.getTime())
+    .startAt(last14Days.getTime()) // ✅ 14 gün öncesinden başla
     .once("value")
     .then((snapshot) => {
       const outages = [];
@@ -1060,8 +1345,9 @@ window.addEventListener("load", function () {
   // Temayı yükle
   initTheme();
 
-  // Grafiği oluştur
-  createRealChart();
+  // Grafikleri oluştur
+  createCoolersChart(); // ✅ YENİ - Soğutucular grafiği
+  createAmbientChart(); // ✅ YENİ - Ortam Sıcaklığı grafiği
 
   // İstatistikleri yükle
   loadDailyStats();

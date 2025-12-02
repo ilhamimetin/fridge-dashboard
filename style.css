@@ -224,8 +224,9 @@ body.dark-mode .alert.success {
     transition: all 0.3s ease;
 }
 
+/* Card'lar arası boşluk */
 .card.full-width {
-    grid-column: 1 / -1;
+    margin-bottom: 25px; /* ✅ Card'lar arası boşluk - Tüm cihazlarda */
 }
 
 h1 {
@@ -251,6 +252,16 @@ h2 {
     font-weight: bold;
     color: var(--temp-color);
     margin: 10px 0;
+    line-height: 1.2; /* ✅ Tek satırda kalması için */
+    white-space: nowrap; /* ✅ Alt satıra inmesin */
+}
+
+/* Mobile için özel düzenleme */
+@media (max-width: 480px) {
+    .temp {
+        font-size: 2.8em; /* ✅ Biraz küçült */
+        line-height: 1.1;
+    }
 }
 
 .timestamp {
@@ -312,6 +323,7 @@ body.dark-mode .sensor-status.offline {
     position: relative;
     height: 300px;
     margin-top: 20px;
+    margin-bottom: 30px; /* ✅ Grafikler arası boşluk - Tüm cihazlarda */
 }
 
 .refresh-btn {
@@ -513,13 +525,18 @@ body.dark-mode .outage-item:hover {
 @media (max-width: 768px) {
     .stats-grid,
     .summary-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr; /* ✅ Tek sütun */
     }
     
     .stat-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 5px;
+    }
+    
+    /* ✅ İstatistik kartları arası boşluk */
+    .stat-card {
+        margin-bottom: 15px;
     }
 }
 
