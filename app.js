@@ -324,7 +324,7 @@ function loadCoolersChartData() {
             .then((deepFreezerSnapshot) => {
               const deepFreezerData = deepFreezerSnapshot.val() || {};
 
-              // Zamanları sırala
+              // ✅ Zamanları DOĞRU SIRALA (saat:dakika formatında)
               const times = Array.from(
                 new Set([
                   ...Object.keys(fridgeData),
@@ -332,8 +332,18 @@ function loadCoolersChartData() {
                   ...Object.keys(deepFreezerData),
                 ])
               )
-                .sort()
-                .slice(-48);
+                .sort((a, b) => {
+                  // "HH:MM" formatını karşılaştır
+                  const [aHour, aMin] = a.split(':').map(Number);
+                  const [bHour, bMin] = b.split(':').map(Number);
+                  
+                  // Saat ve dakikayı sayıya çevirerek karşılaştır
+                  const aTime = aHour * 60 + aMin;
+                  const bTime = bHour * 60 + bMin;
+                  
+                  return aTime - bTime;
+                })
+                .slice(-48); // Son 48 veri noktası
 
               // Grafiğe yükle - SADECE tüm sensörlerde veri olan zamanları ekle
               times.forEach((time) => {
@@ -376,8 +386,20 @@ function loadAmbientChartData() {
     .then((snapshot) => {
       const ambientData = snapshot.val() || {};
 
-      // Zamanları sırala
-      const times = Object.keys(ambientData).sort().slice(-48);
+      // ✅ Zamanları DOĞRU SIRALA (saat:dakika formatında)
+      const times = Object.keys(ambientData)
+        .sort((a, b) => {
+          // "HH:MM" formatını karşılaştır
+          const [aHour, aMin] = a.split(':').map(Number);
+          const [bHour, bMin] = b.split(':').map(Number);
+          
+          // Saat ve dakikayı sayıya çevirerek karşılaştır
+          const aTime = aHour * 60 + aMin;
+          const bTime = bHour * 60 + bMin;
+          
+          return aTime - bTime;
+        })
+        .slice(-48); // Son 48 veri noktası
 
       // Grafiğe yükle
       times.forEach((time) => {
