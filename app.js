@@ -697,8 +697,8 @@ function updateConnectionStatus() {
   const timeSinceUpdate = Date.now() - lastOverallUpdate.getTime();
   const minutesSinceUpdate = Math.floor(timeSinceUpdate / (1000 * 60));
 
-  // 1 DAKİKADAN FAZLA ise elektrik kesintisi (TEST İÇİN)
-  if (timeSinceUpdate > 80000) {
+  // 5 DAKİKADAN FAZLA ise elektrik kesintisi (TEST İÇİN)
+  if (timeSinceUpdate > 300000) {
     statusDot.className = "status-dot offline";
     statusText.innerText = "🔴 Elektrik Kesildi";
     powerAlert.classList.add("show");
